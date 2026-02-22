@@ -81,22 +81,22 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
         return congratulations[dis(gen)];
     }
 
-    void trySendScreenshotRoast(float dt) {
-        auto director = CCDirector::sharedDirector();
-        if (!director) return;
-        auto scene = director->getRunningScene();
-        if (!scene) return;
-        auto winSize = director->getWinSize();
-        if (winSize.width <= 0 || winSize.height <= 0) return;
-        auto renderTexture = CCRenderTexture::create(static_cast<int>(winSize.width), static_cast<int>(winSize.height), kCCTexture2DPixelFormat_RGBA8888);
-        if (!renderTexture) return;
-        if (!renderTexture->begin()) return;
-        scene->visit();
-        renderTexture->end();
-        auto savePath = Mod::get()->getSaveDir() / "last_death.png";
-        if (!renderTexture->saveToFile(savePath.string().c_str(), kCCImageFormatPNG)) return;
-        std::string roast = getRandomRoast(static_cast<int>(this->getCurrentPercent()), this->m_level->m_levelName);
-        sendToDiscord(savePath.string(), roast);
+void trySendScreenshotRoast(float dt) {
+    auto director = CCDirector::sharedDirector();
+    if (!director) return;
+    auto scene = director->getRunningScene();
+    if (!scene) return;
+    auto winSize = director->getWinSize();
+    if (winSize.width <= 0 || winSize.height <= 0) return;
+    auto renderTexture = CCRenderTexture::create(static_cast<int>(winSize.width), static_cast<int>(winSize.height), kCCTexture2DPixelFormat_RGBA8888);
+    if (!renderTexture) return;
+    if (!renderTexture->begin()) return;
+    scene->visit();
+    renderTexture->end();
+    auto savePath = Mod::get()->getSaveDir() / "last_death.png";
+    if (!renderTexture->saveToFile(savePath.string().c_str(), kCCImageFormatPNG)) return;
+    std::string roast = getRandomRoast(static_cast<int>(this->getCurrentPercent()), this->m_level->m_levelName);
+    sendToDiscord(savePath.string(), roast);
     }
 
     void sendToDiscord(const std::string& imagePath, const std::string& content) {
