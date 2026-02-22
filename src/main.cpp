@@ -21,9 +21,7 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
 
     static void loadRoasts() {
         if (roastsLoaded) return;
-
         auto roastFile = Mod::get()->getSaveDir() / "roasts.txt";
-
         if (!fs::exists(roastFile)) {
             std::ofstream file(roastFile);
             file << "bro died at {}% on {}, skill issue 💀\n";
@@ -33,24 +31,19 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
             file << "bruhhh you had one job at {}%\n";
             file.close();
         }
-
         std::ifstream file(roastFile);
         std::string line;
         while (std::getline(file, line)) {
             if (!line.empty() && line[0] != '#') roasts.push_back(line);
         }
         file.close();
-
         if (roasts.empty()) roasts.push_back("bro died at {}% on {}, skill issue 💀");
-
         roastsLoaded = true;
     }
 
     static void loadCongratulations() {
         if (congratsLoaded) return;
-
         auto congratsFile = Mod::get()->getSaveDir() / "congratulations.txt";
-
         if (!fs::exists(congratsFile)) {
             std::ofstream file(congratsFile);
             file << "u rlly beat it? wow\n";
@@ -62,16 +55,13 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
             file << "W behaviour actually\n";
             file.close();
         }
-
         std::ifstream file(congratsFile);
         std::string line;
         while (std::getline(file, line)) {
             if (!line.empty() && line[0] != '#') congratulations.push_back(line);
         }
         file.close();
-
         if (congratulations.empty()) congratulations.push_back("u rlly beat it? wow");
-
         congratsLoaded = true;
     }
 
@@ -91,50 +81,41 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
         return congratulations[dis(gen)];
     }
 
-    void captureAndSend(int currentPercent, const std::string& levelName) {
+    void trySendScreenshotRoast(float dt) {
         auto director = CCDirector::sharedDirector();
         if (!director) return;
-
         auto scene = director->getRunningScene();
         if (!scene) return;
-
         auto winSize = director->getWinSize();
-        auto renderTexture = CCRenderTexture::create(winSize.width, winSize.height, kCCTexture2DPixelFormat_RGBA8888);
-
+        if (winSize.width <= 0 || winSize.height <= 0) return;
+        auto renderTexture = CCRenderTexture::create(static_cast<int>(winSize.width), static_cast<int>(winSize.height), kCCTexture2DPixelFormat_RGBA8888);
         if (!renderTexture) return;
-
-        renderTexture->begin();
+        if (!renderTexture->begin()) return;
         scene->visit();
         renderTexture->end();
-
         auto savePath = Mod::get()->getSaveDir() / "last_death.png";
-        renderTexture->saveToFile(savePath.string().c_str(), kCCImageFormatPNG);
-
-        std::string roast = getRandomRoast(currentPercent, levelName);
+        if (!renderTexture->saveToFile(savePath.string().c_str(), kCCImageFormatPNG)) return;
+        std::string roast = getRandomRoast(static_cast<int>(this->getCurrentPercent()), this->m_level->m_levelName);
         sendToDiscord(savePath.string(), roast);
     }
 
     void sendToDiscord(const std::string& imagePath, const std::string& content) {
         auto webhookUrl = Mod::get()->getSettingValue<std::string>("webhook_url");
         if (webhookUrl.empty()) return;
-
-        std::string boundary = "----Boundary" + std::to_string(time(nullptr));
+        std::string boundary = "----Boundary" + std::to_string(rand() * rand());
         std::string body = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"content\"\r\n\r\n" + content + "\r\n";
-
         std::ifstream file(imagePath, std::ios::binary | std::ios::ate);
         if (file) {
             auto size = file.tellg();
             file.seekg(0);
             std::vector<char> buf(size);
-            file.read(buf.data(), size);
-
-            body += "--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"death.png\"\r\nContent-Type: image/png\r\n\r\n";
-            body.append(buf.data(), size);
-            body += "\r\n";
+            if (file.read(buf.data(), size)) {
+                body += "--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"death.png\"\r\nContent-Type: image/png\r\n\r\n";
+                body.append(buf.data(), size);
+                body += "\r\n";
+            }
         }
-
         body += "--" + boundary + "--\r\n";
-
         web::WebRequest()
             .bodyString(body)
             .header("Content-Type", "multipart/form-data; boundary=" + boundary)
@@ -144,9 +125,7 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
     void sendToDiscordCompletion(const std::string& congratsMsg, const std::string& levelName) {
         auto webhookUrl = Mod::get()->getSettingValue<std::string>("webhook_url");
         if (webhookUrl.empty()) return;
-
         std::string msg = fmt::format("{} - {}", congratsMsg, levelName);
-
         web::WebRequest()
             .bodyString(msg)
             .header("Content-Type", "application/json")
@@ -158,14 +137,15 @@ public:
         int percent = this->getCurrentPercentInt();
         int min = Mod::get()->getSettingValue<int64_t>("min_percent");
         if (percent >= min && !m_isPracticeMode) {
-            captureAndSend(percent, m_level->m_levelName);
+            CCDirector::sharedDirector()->getScheduler()->scheduleSelector(schedule_selector(MyPlayLayer::trySendScreenshotRoast), this, 0.5f, false);
         }
         MyPlayLayer::destroyPlayer(p0, p1);
     }
 
     void levelComplete() {
-        std::string name = m_level->m_levelName;
-        sendToDiscordCompletion(getRandomCongratulations(name), name);
+        std::string levelName = m_level->m_levelName;
+        std::string congrats = getRandomCongratulations(levelName);
+        sendToDiscordCompletion(congrats, levelName);
         MyPlayLayer::levelComplete();
     }
 };
