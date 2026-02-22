@@ -90,11 +90,11 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
         if (winSize.width <= 0 || winSize.height <= 0) return;
         auto renderTexture = CCRenderTexture::create(static_cast<int>(winSize.width), static_cast<int>(winSize.height), kCCTexture2DPixelFormat_RGBA8888);
         if (!renderTexture) return;
-        if (!renderTexture->begin()) return;
+        renderTexture->begin(); // no return value dumb cocos
         scene->visit();
         renderTexture->end();
         auto savePath = Mod::get()->getSaveDir() / "last_death.png";
-        if (!renderTexture->saveToFile(savePath.string().c_str(), kCCImageFormatPNG)) return;
+        renderTexture->saveToFile(savePath.string().c_str(), kCCImageFormatPNG);
         std::string roast = getRandomRoast(static_cast<int>(this->getCurrentPercent()), this->m_level->m_levelName);
         sendToDiscord(savePath.string(), roast);
     }
