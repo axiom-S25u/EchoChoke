@@ -1,0 +1,28 @@
+{
+    "geode": "5.0.0-beta.4",
+    "gd": {
+        "win": "2.2081",
+        "mac": "2.2081",
+        "ios": "2.2081",
+        "android": "2.2081"
+    },
+    "id": "axiom.echochoke",
+    "name": "EchoChoke",
+    "version": "v1.0.0",
+    "developer": "Axiom",
+    "description": "automatically roasts your fails and sends a screenshot to discord",
+    "settings": {
+        "webhook_url": {
+            "name": "Discord Webhook URL",
+            "type": "string",
+            "default": ""
+        },
+        "min_percent": {
+            "name": "Min Percent",
+            "type": "int",
+            "default": 50,
+            "min": 0,
+            "max": 100
+        }
+    }
+}
