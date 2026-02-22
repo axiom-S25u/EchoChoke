@@ -3,8 +3,7 @@ name: Build Geode Mod
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
@@ -12,16 +11,16 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - name: Windows
-          os: windows-latest
-        - name: macOS
-          os: macos-latest
-        - name: iOS
-          os: macos-latest
-          target: iOS
-        - name: Android
-          os: ubuntu-latest
-          target: Android
+          - name: Windows
+            os: windows-latest
+          - name: macOS
+            os: macos-latest
+          - name: iOS
+            os: macos-latest
+            target: iOS
+          - name: Android
+            os: ubuntu-latest
+            target: Android
 
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
@@ -30,15 +29,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Geode SDK
+        uses: geode-sdk/setup-geode@v1
+        with:
+          geode-version: beta
+
       - name: Build Mod
-        uses: geode-sdk/build-geode-mod@main
+        uses: geode-sdk/build-geode-mod@v1
         with:
           bindings-ref: main
           combine: true
-          target: ${{ matrix.config.target }}
+          target: ${{ matrix.config.target || 'default' }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.config.name }}
+          name: ${{ matrix.config.name }}-build
           path: build/*.geode
+          if-no-files-found: warn
