@@ -14,19 +14,22 @@ jobs:
         config:
           - name: Windows
             os: windows-latest
-            target: default
+            cli: geode-cli-windows.exe
           - name: macOS
             os: macos-latest
-            target: default
-          - name: iOS
-            os: macos-latest
-            target: iOS
+            cli: geode-cli-macos
           - name: Android32
             os: ubuntu-latest
             target: Android32
+            cli: geode-cli-linux
           - name: Android64
             os: ubuntu-latest
             target: Android64
+            cli: geode-cli-linux
+          - name: iOS
+            os: macos-latest
+            target: iOS
+            cli: geode-cli-macos
 
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
@@ -34,21 +37,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Geode CLI & SDK (Windows/macOS)
-        if: runner.os != 'Linux'
+      - name: Install Geode CLI
         run: |
-          curl -L https://github.com/geode-sdk/geode/releases/latest/download/geode-cli-${{ runner.os == 'Windows' && 'windows.exe' || 'macos' }} -o geode
+          curl -L https://github.com/geode-sdk/geode/releases/latest/download/${{ matrix.config.cli }} -o geode
           chmod +x geode
-          ./geode sdk install --yes
+          ./geode sdk install --yes || true
 
-      - name: Install Geode CLI & SDK (Linux/Android)
-        if: runner.os == 'Linux'
-        run: |
-          curl -L https://github.com/geode-sdk/geode/releases/latest/download/geode-cli-linux -o geode
-          chmod +x geode
-          ./geode sdk install --yes
-
-      - name: Install Android deps (Android only)
+      - name: Android deps (Android only)
         if: contains(matrix.config.name, 'Android')
         run: |
           sudo apt update
@@ -58,7 +53,7 @@ jobs:
         uses: geode-sdk/build-geode-mod@main
         with:
           combine: true
-          target: ${{ matrix.config.target }}
+          target: ${{ matrix.config.target || 'default' }}
           build-args: '--parallel 16'
 
       - name: Upload Artifact
@@ -69,7 +64,6 @@ jobs:
           if-no-files-found: warn
 
   package:
-    name: Package All Builds
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -79,13 +73,12 @@ jobs:
           path: artifacts/
           merge-multiple: true
 
-      - name: Combine Artifacts
+      - name: Combine
         run: |
-          mkdir -p combined
+          mkdir combined
           find artifacts -name "*.geode" -exec cp {} combined/ \;
 
       - uses: actions/upload-artifact@v4
         with:
-          name: All Geode Builds
+          name: All Builds
           path: combined/*.geode
-          if-no-files-found: warn
