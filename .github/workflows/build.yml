@@ -30,6 +30,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Android NDK
+        if: matrix.config.target == 'Android'
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26b
+
       - name: Build Mod
         uses: geode-sdk/build-geode-mod@main
         with:
