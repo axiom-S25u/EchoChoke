@@ -82,6 +82,7 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
     }
 
     void trySendScreenshotRoast(float dt) {
+        CCDirector::sharedDirector()->getScheduler()->unscheduleSelector(schedule_selector(MyPlayLayer::trySendScreenshotRoast), this);
         auto director = CCDirector::sharedDirector();
         if (!director) return;
         auto scene = director->getRunningScene();
@@ -90,7 +91,7 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
         if (winSize.width <= 0 || winSize.height <= 0) return;
         auto renderTexture = CCRenderTexture::create(static_cast<int>(winSize.width), static_cast<int>(winSize.height), kCCTexture2DPixelFormat_RGBA8888);
         if (!renderTexture) return;
-        renderTexture->begin(); // no return value dumb cocos
+        renderTexture->begin();
         scene->visit();
         renderTexture->end();
         auto savePath = Mod::get()->getSaveDir() / "last_death.png";
@@ -134,12 +135,12 @@ class MyPlayLayer : public geode::Modify<MyPlayLayer, PlayLayer> {
 
 public:
     void destroyPlayer(PlayerObject* p0, GameObject* p1) {
+        MyPlayLayer::destroyPlayer(p0, p1);
         int percent = this->getCurrentPercentInt();
         int min = Mod::get()->getSettingValue<int64_t>("min_percent");
         if (percent >= min && !m_isPracticeMode) {
             CCDirector::sharedDirector()->getScheduler()->scheduleSelector(schedule_selector(MyPlayLayer::trySendScreenshotRoast), this, 0.5f, false);
         }
-        MyPlayLayer::destroyPlayer(p0, p1);
     }
 
     void levelComplete() {
@@ -149,4 +150,4 @@ public:
         MyPlayLayer::levelComplete();
     }
 };
-// meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow, yes meow    
+// meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow meow, yes meow
