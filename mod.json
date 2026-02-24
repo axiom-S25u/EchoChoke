@@ -11,6 +11,7 @@
     "version": "v1.0.2",
     "developer": "Axiom",
     "description": "automatically roasts your fails and sends a screenshot to discord",
+    "tags": ["joke" "online" "universal" ]
     "settings": {
         "webhook_url": {
             "name": "Discord Webhook URL",
