@@ -103,13 +103,13 @@ class $modify(MyPlayLayer, PlayLayer) {
             if (m_fields->m_congrats.empty()) message = "GG!";
             else {
                 std::uniform_int_distribution<> dis(0, m_fields->m_congrats.size() - 1);
-                message = fmt::format(m_fields->m_congrats[dis(gen)], m_level->m_levelName);
+                message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(gen)]), m_level->m_levelName);
             }
         } else {
             if (m_fields->m_roasts.empty()) message = "died lol";
             else {
                 std::uniform_int_distribution<> dis(0, m_fields->m_roasts.size() - 1);
-                message = fmt::format(m_fields->m_roasts[dis(gen)], this->getCurrentPercentInt());
+                message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(gen)]), this->getCurrentPercentInt());
             }
         }
 
@@ -129,8 +129,9 @@ class $modify(MyPlayLayer, PlayLayer) {
         utils::web::WebRequest()
             .bodyString(body)
             .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-            .post(webhook);
+            .post(webhook)
+            .expect([](auto* res) {
+                // meow
+            });
     }
 };
-
-// meow
