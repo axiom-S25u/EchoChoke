@@ -7,7 +7,7 @@
 #include <fstream>
 #include <filesystem>
 #include <chrono>
-
+// meow
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 
@@ -63,8 +63,10 @@ class $modify(MyPlayLayer, PlayLayer) {
 
         int percent = this->getCurrentPercentInt();
         auto minPercent = Mod::get()->getSettingValue<int64_t>("min_percent");
+        
+        bool isNewBest = percent > m_level->m_normalPercent;
 
-        if (percent >= minPercent) {
+        if (isNewBest && percent >= minPercent) {
             this->getScheduler()->scheduleSelector(
                 schedule_selector(MyPlayLayer::captureAndSendRoast),
                 this, 0.1f, 0, 0.0f, false
@@ -124,15 +126,15 @@ class $modify(MyPlayLayer, PlayLayer) {
         form.param("content", message);
         auto fileRes = form.file("file", path, "image/png");
         if (fileRes.isErr()) return;
+
         auto req = utils::web::WebRequest()
             .bodyMultipart(form)
-            .header("Content-Type", "multipart/form-data")
             .timeout(std::chrono::seconds(10))
             .post(webhook);
 
         m_fields->m_task.spawn(std::move(req), [](utils::web::WebResponse res) {
             if (res.ok()) {
-                log::info("sent photo + text check discord");
+                log::info("sent, check discord");
             } else {
                 log::error("failed hard: {} code {}", res.errorMessage(), res.code());
             }
