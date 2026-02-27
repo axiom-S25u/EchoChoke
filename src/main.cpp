@@ -125,8 +125,8 @@ class $modify(MyPlayLayer, PlayLayer) {
             if (res.ok()) {
                 log::info("Webhook sent! fuck yeah");
             } else {
-                log::error("Webhook error: {} code {}", res.stringError(), res.code());
+                log::error("Webhook error: {} code {}", res.errorMessage(), res.code());
             }
         });
     }
-}; // i hate this
+}; // meow
