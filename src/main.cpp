@@ -2,6 +2,7 @@
 #include <Geode/loader/Event.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 #include <Geode/utils/web.hpp>
+#include <Geode/utils/async.hpp>
 #include <random>
 #include <fstream>
 #include <filesystem>
@@ -12,7 +13,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         std::vector<std::string> m_roasts;
         std::vector<std::string> m_congrats;
         bool m_loaded = false;
-        EventListener<utils::web::WebResponseEvent> m_listener;
+        async::TaskHolder<utils::web::WebResponse> m_task;
     };
     bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
         if (!PlayLayer::init(level, useReplay, dontSave)) return false;
@@ -104,18 +105,15 @@ class $modify(MyPlayLayer, PlayLayer) {
             log::error("couldnt add ss to form lol");
             return;
         }
-        m_fields->m_listener.bind([](utils::web::WebResponseEvent* e) {
-            if (auto res = e->getResponse()) {
-                if (res->ok()) {
-                    log::info("Webhook sent!");
-                } else {
-                    log::error("Webhook error: {}", res->code());
-                }
+        auto req = utils::web::WebRequest()
+            .bodyMultipart(form)
+            .post(webhook);
+        m_fields->m_task.spawn(req, [](utils::web::WebResponse res) {
+            if (res.ok()) {
+                log::info("Webhook sent!");
+            } else {
+                log::error("Webhook error: {}", res.code());
             }
         });
-        utils::web::WebRequest()
-            .bodyMultipart(form)
-            .post(webhook, Mod::get());
     }
 };
-// meow meow
