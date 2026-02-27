@@ -8,7 +8,7 @@
     },
     "id": "axiom.echochoke",
     "name": "EchoChoke",
-    "version": "v1.0.4",
+    "version": "v1.0.5",
     "developer": "Axiom",
     "description": "automatically roasts your fails and sends a screenshot to discord",
     "tags": ["joke"],
