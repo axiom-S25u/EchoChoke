@@ -15,6 +15,8 @@ class $modify(MyPlayLayer, PlayLayer) {
         bool m_loaded = false;
     };
 
+    GEODE_CUSTOM_FIELDS
+
     bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
         if (!PlayLayer::init(level, useReplay, dontSave)) return false;
 
@@ -26,9 +28,12 @@ class $modify(MyPlayLayer, PlayLayer) {
                 file << "certified choking hazard at {}% 🙏\n";
                 file.close();
             }
+            
             std::ifstream rFile(roastFile);
             std::string rLine;
-            while (std::getline(rFile, rLine)) if (!rLine.empty()) m_fields->m_roasts.push_back(rLine);
+            while (std::getline(rFile, rLine)) {
+                if (!rLine.empty()) m_fields->m_roasts.push_back(rLine);
+            }
 
             auto congratsFile = Mod::get()->getSaveDir() / "congrats.txt";
             if (!fs::exists(congratsFile)) {
@@ -36,9 +41,12 @@ class $modify(MyPlayLayer, PlayLayer) {
                 file << "GG WP! You beat {}! 🥂\n";
                 file.close();
             }
+            
             std::ifstream cFile(congratsFile);
             std::string cLine;
-            while (std::getline(cFile, cLine)) if (!cLine.empty()) m_fields->m_congrats.push_back(cLine);
+            while (std::getline(cFile, cLine)) {
+                if (!cLine.empty()) m_fields->m_congrats.push_back(cLine);
+            }
 
             m_fields->m_loaded = true;
         }
@@ -47,7 +55,6 @@ class $modify(MyPlayLayer, PlayLayer) {
 
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
         PlayLayer::destroyPlayer(player, obj);
-
         if (m_isPracticeMode) return;
 
         int percent = this->getCurrentPercentInt();
@@ -63,20 +70,14 @@ class $modify(MyPlayLayer, PlayLayer) {
 
     void levelComplete() {
         PlayLayer::levelComplete();
-        
         this->getScheduler()->scheduleSelector(
             schedule_selector(MyPlayLayer::captureAndSendCongrats),
             this, 0.1f, 0, 0.0f, false
         );
     }
 
-    void captureAndSendRoast(float dt) {
-        sendToDiscord(false);
-    }
-
-    void captureAndSendCongrats(float dt) {
-        sendToDiscord(true);
-    }
+    void captureAndSendRoast(float dt) { this->sendToDiscord(false); }
+    void captureAndSendCongrats(float dt) { this->sendToDiscord(true); }
 
     void sendToDiscord(bool isVictory) {
         auto webhook = Mod::get()->getSettingValue<std::string>("webhook_url");
@@ -84,6 +85,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 
         auto winSize = CCDirector::sharedDirector()->getWinSize();
         auto renderer = CCRenderTexture::create(winSize.width, winSize.height);
+        
         renderer->begin();
         this->visit();
         renderer->end();
@@ -91,47 +93,48 @@ class $modify(MyPlayLayer, PlayLayer) {
         auto img = renderer->newCCImage();
         if (!img) return;
 
-        auto path = Mod::get()->getSaveDir() / "capture.png";
-        img->saveToFile(path.string().c_str());
+        auto path = Mod::get()->getSaveDir() / "ss.png";
+        bool saved = img->saveToFile(path.string().c_str());
         img->release();
+        if (!saved) return;
 
         std::string message;
         std::random_device rd;
         std::mt19937 gen(rd());
         
         if (isVictory) {
-            if (m_fields->m_congrats.empty()) message = "GG!";
-            else {
+            if (m_fields->m_congrats.empty()) {
+                message = "GG!";
+            } else {
                 std::uniform_int_distribution<> dis(0, m_fields->m_congrats.size() - 1);
-                message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(gen)]), m_level->m_levelName);
+                message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(gen)]), m_level->m_levelName.c_str());
             }
         } else {
-            if (m_fields->m_roasts.empty()) message = "died lol";
-            else {
+            if (m_fields->m_roasts.empty()) {
+                message = "died lol";
+            } else {
                 std::uniform_int_distribution<> dis(0, m_fields->m_roasts.size() - 1);
                 message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(gen)]), this->getCurrentPercentInt());
             }
         }
 
         std::string boundary = "GeodeBoundary" + std::to_string(time(nullptr));
-        std::string body = "--" + boundary + "\r\n";
-        body += "Content-Disposition: form-data; name=\"content\"\r\n\r\n";
-        body += message + "\r\n";
-        body += "--" + boundary + "\r\n";
-        body += "Content-Disposition: form-data; name=\"file\"; filename=\"ss.png\"\r\n";
-        body += "Content-Type: image/png\r\n\r\n";
+        std::vector<uint8_t> body;
+        auto addStr = [&](std::string s) { body.insert(body.end(), s.begin(), s.end()); };
+
+        addStr("--" + boundary + "\r\n");
+        addStr("Content-Disposition: form-data; name=\"content\"\r\n\r\n" + message + "\r\n");
+        addStr("--" + boundary + "\r\n");
+        addStr("Content-Disposition: form-data; name=\"file\"; filename=\"ss.png\"\r\nContent-Type: image/png\r\n\r\n");
 
         std::ifstream file(path, std::ios::binary);
-        std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        body += fileContent + "\r\n";
-        body += "--" + boundary + "--\r\n";
+        std::vector<uint8_t> fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        body.insert(body.end(), fileContent.begin(), fileContent.end());
+        addStr("\r\n--" + boundary + "--\r\n");
 
         utils::web::WebRequest()
-            .bodyString(body)
+            .body(body)
             .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-            .post(webhook)
-            .expect([](auto* res) {
-                // meow
-            });
+            .post(webhook);
     }
 };
