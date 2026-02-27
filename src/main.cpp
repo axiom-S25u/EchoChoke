@@ -25,13 +25,6 @@ class $modify(MyPlayLayer, PlayLayer) {
                 file << "bro died at {}%... skill issue 💀\n";
                 file << "certified choking hazard at {}% 🙏\n";
                 file << "{}% and still trash lmao get gud\n";
-                file << "dropped like a hot potato at {}% 😂\n";
-                file << "your fingers said nah at {}% bro 💀\n";
-                file << "another {}% fail classic you suck\n";
-                file << "at {}% you remembered you're ass 😭\n";
-                file << "{}% death speedrun any% world record\n";
-                file << "bro thought he was him at {}% 💀\n";
-                file << "choked harder than your mom at {}%\n";
                 file.close();
             }
             std::ifstream rFile(roastFile);
@@ -77,56 +70,62 @@ class $modify(MyPlayLayer, PlayLayer) {
     void captureAndSendCongrats(float dt) { this->sendToDiscord(true); }
     void sendToDiscord(bool isVictory) {
         auto webhook = Mod::get()->getSettingValue<std::string>("webhook_url");
-        if (webhook.empty()) return;
+        if (webhook.empty()) {
+            log::error("no webhook url set idiot");
+            return;
+        }
+        std::string message;
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        if (isVictory) {
+            if (m_fields->m_congrats.empty()) message = "GG! you actually won?";
+            else {
+                std::uniform_int_distribution<> dis(0, (int)m_fields->m_congrats.size() - 1);
+                message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(gen)]), m_level->m_levelName.c_str());
+            }
+        } else {
+            if (m_fields->m_roasts.empty()) message = "died lol skill issue";
+            else {
+                std::uniform_int_distribution<> dis(0, (int)m_fields->m_roasts.size() - 1);
+                message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(gen)]), this->getCurrentPercentInt());
+            }
+        }
         auto winSize = CCDirector::sharedDirector()->getWinSize();
         auto renderer = CCRenderTexture::create(winSize.width, winSize.height);
         renderer->begin();
         this->visit();
         renderer->end();
         auto img = renderer->newCCImage();
-        if (!img) return;
+        if (!img) {
+            log::error("no image from renderer wtf");
+            return;
+        }
         auto path = Mod::get()->getSaveDir() / "ss.png";
         bool saved = img->saveToFile(path.string().c_str());
         img->release();
+        log::info("screenshot saved? {}", saved ? "yes" : "no fuck");
         if (!saved) return;
-        std::string message;
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        if (isVictory) {
-            if (m_fields->m_congrats.empty()) {
-                message = "GG!";
-            } else {
-                std::uniform_int_distribution<> dis(0, (int)m_fields->m_congrats.size() - 1);
-                message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(gen)]), m_level->m_levelName.c_str());
-            }
-        } else {
-            if (m_fields->m_roasts.empty()) {
-                message = "died lol";
-            } else {
-                std::uniform_int_distribution<> dis(0, (int)m_fields->m_roasts.size() - 1);
-                message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(gen)]), this->getCurrentPercentInt());
-            }
-        }
         utils::web::MultipartForm form;
         form.param("content", message);
         auto fileRes = form.file("file", path, "image/png");
+        log::info("multipart file added? {}", fileRes.isOk() ? "yes" : "no error");
         if (fileRes.isErr()) {
-            log::error("couldnt add ss to form lol");
+            log::error("file add failed lol");
             return;
         }
-        log::info("trying to send roast/congrats webhook");
+        log::info("sending photo + text to {}", webhook);
         auto req = utils::web::WebRequest()
             .bodyMultipart(form)
             .certVerification(false)
-            .timeout(std::chrono::seconds(15))
-            .userAgent("EchoChokeMod/1.0 (GD 2.208)")
+            .timeout(std::chrono::seconds(8))
+            .userAgent("EchoChoke/1.0 GD")
             .post(webhook);
         m_fields->m_task.spawn(std::move(req), [](utils::web::WebResponse res) {
             if (res.ok()) {
-                log::info("Webhook sent! fuck yeah");
+                log::info("SENT PHOTO + TEXT BITCH check discord");
             } else {
-                log::error("Webhook error: {} code {}", res.errorMessage(), res.code());
+                log::error("failed hard: {} code {}", res.errorMessage(), res.code());
             }
         });
     }
-}; // meow
+}; // MEOWWWW, thanks jukebox for borrowing me code
