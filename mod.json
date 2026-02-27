@@ -22,7 +22,7 @@
         "min_percent": {
             "name": "Min Percent",
             "type": "int",
-            "default": 50,
+            "default": 1,
             "min": 0,
             "max": 100
         }
