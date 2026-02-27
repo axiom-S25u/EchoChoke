@@ -15,8 +15,6 @@ class $modify(MyPlayLayer, PlayLayer) {
         bool m_loaded = false;
     };
 
-    GEODE_CUSTOM_FIELDS
-
     bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
         if (!PlayLayer::init(level, useReplay, dontSave)) return false;
 
@@ -132,9 +130,10 @@ class $modify(MyPlayLayer, PlayLayer) {
         body.insert(body.end(), fileContent.begin(), fileContent.end());
         addStr("\r\n--" + boundary + "--\r\n");
 
-        utils::web::WebRequest()
-            .body(body)
+        auto req = utils::web::WebRequest();
+        auto fut = req.body(body)
             .header("Content-Type", "multipart/form-data; boundary=" + boundary)
             .post(webhook);
     }
 };
+// meow
