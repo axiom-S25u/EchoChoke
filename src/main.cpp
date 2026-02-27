@@ -29,6 +29,16 @@ class $modify(MyPlayLayer, PlayLayer) {
                 file << "bro died at {}%... skill issue 💀\n";
                 file << "certified choking hazard at {}% 🙏\n";
                 file << "{}% and still trash lmao get gud\n";
+                file << "bro really thought he had it but died at {}% 😭\n";
+                file << "imagine getting to {}% just to choke like that 🙏\n";
+                file << "{}%... my grandma plays better with one hand 💀\n";
+                file << "another day, another {}% fail. consistency in being trash is crazy 🥂\n";
+                file << "bro is allergic to 100%, currently stuck at {}% 💀\n";
+                file << "{}%? yeah just delete the game at this point fr 🙏\n";
+                file << "certified {}% moment. seek help 😭\n";
+                file << "ok but who actually dies at {}%? oh wait, you do 💀\n";
+                file << "bro's heartbeat peaked just to fail at {}%... tragic 🙏\n";
+                file << "{}%... i'd be embarrassed to let the webhook even send this 🥂\n";
                 file.close();
             }
 
@@ -42,6 +52,7 @@ class $modify(MyPlayLayer, PlayLayer) {
             if (!fs::exists(congratsFile)) {
                 std::ofstream file(congratsFile);
                 file << "GG WP! You beat {}! 🥂\n";
+                file << "Wait... you actually finished {}? hackers smh 💀\n";
                 file.close();
             }
 
