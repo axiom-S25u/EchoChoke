@@ -16,7 +16,8 @@
         "webhook_url": {
             "name": "Discord Webhook URL",
             "type": "string",
-            "default": ""
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:./-_"
         },
         "min_percent": {
             "name": "Min Percent",
