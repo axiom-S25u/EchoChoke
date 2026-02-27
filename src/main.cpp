@@ -13,7 +13,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         std::vector<std::string> m_roasts;
         std::vector<std::string> m_congrats;
         bool m_loaded = false;
-        EventListener<utils::web::WebTask> m_listener;
+        EventListener<utils::web::WebResponseEvent> m_listener;
     };
 
     bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
@@ -57,7 +57,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         if (m_isPracticeMode) return;
 
         int percent = this->getCurrentPercentInt();
-        int minPercent = Mod::get()->getSettingValue<int64_t>("min_percent");
+        auto minPercent = Mod::get()->getSettingValue<int64_t>("min_percent");
 
         if (percent >= minPercent) {
             this->getScheduler()->scheduleSelector(
@@ -105,47 +105,36 @@ class $modify(MyPlayLayer, PlayLayer) {
             if (m_fields->m_congrats.empty()) {
                 message = "GG!";
             } else {
-                std::uniform_int_distribution<> dis(0, m_fields->m_congrats.size() - 1);
+                std::uniform_int_distribution<> dis(0, (int)m_fields->m_congrats.size() - 1);
                 message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(gen)]), m_level->m_levelName.c_str());
             }
         } else {
             if (m_fields->m_roasts.empty()) {
                 message = "died lol";
             } else {
-                std::uniform_int_distribution<> dis(0, m_fields->m_roasts.size() - 1);
+                std::uniform_int_distribution<> dis(0, (int)m_fields->m_roasts.size() - 1);
                 message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(gen)]), this->getCurrentPercentInt());
             }
         }
 
-        std::string boundary = "GeodeBoundary" + std::to_string(time(nullptr));
-        std::vector<uint8_t> body;
-        auto addStr = [&](std::string s) { body.insert(body.end(), s.begin(), s.end()); };
-
-        addStr("--" + boundary + "\r\n");
-        addStr("Content-Disposition: form-data; name=\"content\"\r\n\r\n");
-        addStr(message + "\r\n");
-        addStr("--" + boundary + "\r\n");
-        addStr("Content-Disposition: form-data; name=\"file\"; filename=\"ss.png\"\r\n");
-        addStr("Content-Type: image/png\r\n\r\n");
-
-        std::ifstream file(path, std::ios::binary);
-        std::vector<uint8_t> fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        body.insert(body.end(), fileContent.begin(), fileContent.end());
-        addStr("\r\n--" + boundary + "--\r\n");
-
-        m_fields->m_listener.bind([](utils::web::WebTask::Event* e) {
-            if (auto res = e->getValue()) {
+        m_fields->m_listener.bind([](utils::web::WebResponseEvent* e) {
+            if (auto res = e->getResponse()) {
                 if (res->ok()) {
-                    log::info("Webhook sent!");
+                    log::info("Sent to Discord successfully!");
                 } else {
-                    log::error("Webhook failed: {}", res->code());
+                    log::error("Discord error: {}", res->code());
                 }
             }
         });
 
-        auto req = utils::web::WebRequest();
-        m_fields->m_listener.setFilter(req.body(body)
-            .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-            .post(webhook));
+        utils::web::MultipartForm form;
+        form.add("content", message);
+        form.addFile("file", path);
+
+        m_fields->m_listener.setFilter(
+            utils::web::WebRequest()
+                .bodyMultipart(form)
+                .post(webhook, Mod::get())
+        );
     }
 };
