@@ -7,6 +7,7 @@
 #include <fstream>
 #include <filesystem>
 #include <chrono>
+#include <algorithm>
 
 using namespace geode::prelude;
 namespace fs = std::filesystem;
@@ -18,6 +19,16 @@ class $modify(MyPlayLayer, PlayLayer) {
         bool m_loaded = false;
         async::TaskHolder<utils::web::WebResponse> m_task;
     };
+
+    std::string trim(std::string s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }));
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }).base(), s.end());
+        return s;
+    }
 
     bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
         if (!PlayLayer::init(level, useReplay, dontSave)) return false;
@@ -84,7 +95,8 @@ class $modify(MyPlayLayer, PlayLayer) {
     void captureAndSendCongrats(float dt) { this->sendToDiscord(true); }
 
     void sendToDiscord(bool isVictory) {
-        auto webhook = Mod::get()->getSettingValue<std::string>("webhook_url");
+        std::string webhook = trim(Mod::get()->getSettingValue<std::string>("webhook_url"));
+        
         if (webhook.empty()) {
             log::error("no webhook url set idiot");
             return;
@@ -126,34 +138,28 @@ class $modify(MyPlayLayer, PlayLayer) {
         bool saved = img->saveToFile(path.string().c_str());
         img->release();
 
-        if (!saved) {
-            log::error("failed to save screenshot");
-            return;
-        }
+        if (!saved) return;
 
         utils::web::MultipartForm form;
         form.param("content", message);
         auto fileRes = form.file("file", path, "image/png");
 
-        if (fileRes.isErr()) {
-            log::error("file add failed lol");
-            return;
-        }
+        if (fileRes.isErr()) return;
 
         log::info("sending photo + text to {}", webhook);
 
         auto req = utils::web::WebRequest()
             .bodyMultipart(form)
             .certVerification(false)
-            .timeout(std::chrono::seconds(8))
-            .userAgent("EchoChoke/1.0 GD")
+            .timeout(std::chrono::seconds(10))
+            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)") // Standard browser UA
             .post(webhook);
 
         m_fields->m_task.spawn(std::move(req), [](utils::web::WebResponse res) {
             if (res.ok()) {
                 log::info("sent photo + text check discord");
             } else {
-                log::error("failed hard: {} code {}", res.errorMessage(), res.code());
+                log::error("failed hard: {} | Code: {}", res.errorMessage(), res.code());
             }
         });
     }
