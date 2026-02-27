@@ -7,7 +7,8 @@
 #include <fstream>
 #include <filesystem>
 #include <chrono>
-
+#include <thread>
+// meow
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 
@@ -69,14 +70,17 @@ class $modify(MyPlayLayer, PlayLayer) {
     }
 
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
-        PlayLayer::destroyPlayer(player, obj);
-        
-        if (m_isPracticeMode) return;
+        if (m_isPracticeMode) {
+            PlayLayer::destroyPlayer(player, obj);
+            return;
+        }
 
         int percent = this->getCurrentPercentInt();
         auto minPercent = Mod::get()->getSettingValue<int64_t>("min_percent");
         
         bool isNewBest = percent > m_level->m_normalPercent;
+
+        PlayLayer::destroyPlayer(player, obj);
 
         if (isNewBest && percent >= minPercent) {
             this->getScheduler()->scheduleSelector(
@@ -133,27 +137,32 @@ class $modify(MyPlayLayer, PlayLayer) {
         if (!img) return;
 
         auto path = Mod::get()->getSaveDir() / "ss.png";
-        bool saved = img->saveToFile(path.string().c_str());
-        img->release();
 
-        if (!saved) return;
+        std::thread([this, img, path, message, webhook]() {
+            bool saved = img->saveToFile(path.string().c_str());
+            img->release();
 
-        utils::web::MultipartForm form;
-        form.param("content", message);
-        auto fileRes = form.file("file", path, "image/png");
-        if (fileRes.isErr()) return;
+            if (!saved) return;
 
-        auto req = utils::web::WebRequest()
-            .bodyMultipart(form)
-            .timeout(std::chrono::seconds(10))
-            .post(webhook);
+            geode::Loader::get()->queueInMainThread([this, path, message, webhook]() {
+                utils::web::MultipartForm form;
+                form.param("content", message);
+                auto fileRes = form.file("file", path, "image/png");
+                if (fileRes.isErr()) return;
 
-        m_fields->m_task.spawn(std::move(req), [](utils::web::WebResponse res) {
-            if (res.ok()) {
-                log::info("sent, check discord");
-            } else {
-                log::error("failed hard: {} code {}", res.errorMessage(), res.code());
-            }
-        });
+                auto req = utils::web::WebRequest()
+                    .bodyMultipart(form)
+                    .timeout(std::chrono::seconds(10))
+                    .post(webhook);
+
+                m_fields->m_task.spawn(std::move(req), [](utils::web::WebResponse res) {
+                    if (res.ok()) {
+                        log::info("sent, check discord");
+                    } else {
+                        log::error("failed hard: {} code {}", res.errorMessage(), res.code());
+                    }
+                });
+            });
+        }).detach();
     }
 };
