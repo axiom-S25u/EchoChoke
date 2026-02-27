@@ -23,6 +23,14 @@ class $modify(MyPlayLayer, PlayLayer) {
                 std::ofstream file(roastFile);
                 file << "bro died at {}%... skill issue 💀\n";
                 file << "certified choking hazard at {}% 🙏\n";
+                file << "{}% and still trash lmao get gud\n";
+                file << "dropped like a hot potato at {}% 😂\n";
+                file << "your fingers said nah at {}% bro 💀\n";
+                file << "another {}% fail classic you suck\n";
+                file << "at {}% you remembered you're ass 😭\n";
+                file << "{}% death speedrun any% world record\n";
+                file << "bro thought he was him at {}% 💀\n";
+                file << "choked harder than your mom at {}%\n";
                 file.close();
             }
             std::ifstream rFile(roastFile);
@@ -108,7 +116,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         auto req = utils::web::WebRequest()
             .bodyMultipart(form)
             .post(webhook);
-        m_fields->m_task.spawn(req, [](utils::web::WebResponse res) {
+        m_fields->m_task.spawn(std::move(req), [](utils::web::WebResponse res) {
             if (res.ok()) {
                 log::info("Webhook sent!");
             } else {
