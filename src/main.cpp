@@ -6,6 +6,7 @@
 #include <random>
 #include <fstream>
 #include <filesystem>
+#include <chrono>
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 class $modify(MyPlayLayer, PlayLayer) {
@@ -113,15 +114,19 @@ class $modify(MyPlayLayer, PlayLayer) {
             log::error("couldnt add ss to form lol");
             return;
         }
+        log::info("trying to send roast/congrats webhook");
         auto req = utils::web::WebRequest()
             .bodyMultipart(form)
+            .certVerification(false)
+            .timeout(std::chrono::seconds(15))
+            .userAgent("EchoChokeMod/1.0 (GD 2.208)")
             .post(webhook);
         m_fields->m_task.spawn(std::move(req), [](utils::web::WebResponse res) {
             if (res.ok()) {
-                log::info("Webhook sent!");
+                log::info("Webhook sent! fuck yeah");
             } else {
-                log::error("Webhook error: {}", res.code());
+                log::error("Webhook error: {} code {}", res.stringError(), res.code());
             }
         });
     }
-};
+}; // i hate this
