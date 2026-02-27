@@ -13,6 +13,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         std::vector<std::string> m_roasts;
         std::vector<std::string> m_congrats;
         bool m_loaded = false;
+        EventListener<utils::web::WebTask> m_listener;
     };
 
     bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
@@ -121,19 +122,30 @@ class $modify(MyPlayLayer, PlayLayer) {
         auto addStr = [&](std::string s) { body.insert(body.end(), s.begin(), s.end()); };
 
         addStr("--" + boundary + "\r\n");
-        addStr("Content-Disposition: form-data; name=\"content\"\r\n\r\n" + message + "\r\n");
+        addStr("Content-Disposition: form-data; name=\"content\"\r\n\r\n");
+        addStr(message + "\r\n");
         addStr("--" + boundary + "\r\n");
-        addStr("Content-Disposition: form-data; name=\"file\"; filename=\"ss.png\"\r\nContent-Type: image/png\r\n\r\n");
+        addStr("Content-Disposition: form-data; name=\"file\"; filename=\"ss.png\"\r\n");
+        addStr("Content-Type: image/png\r\n\r\n");
 
         std::ifstream file(path, std::ios::binary);
         std::vector<uint8_t> fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         body.insert(body.end(), fileContent.begin(), fileContent.end());
         addStr("\r\n--" + boundary + "--\r\n");
 
+        m_fields->m_listener.bind([](utils::web::WebTask::Event* e) {
+            if (auto res = e->getValue()) {
+                if (res->ok()) {
+                    log::info("Webhook sent!");
+                } else {
+                    log::error("Webhook failed: {}", res->code());
+                }
+            }
+        });
+
         auto req = utils::web::WebRequest();
-        auto fut = req.body(body)
+        m_fields->m_listener.setFilter(req.body(body)
             .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-            .post(webhook);
+            .post(webhook));
     }
 };
-// meow
