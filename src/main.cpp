@@ -7,7 +7,7 @@
 #include <fstream>
 #include <filesystem>
 #include <chrono>
-// meow
+
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 
@@ -59,6 +59,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
         PlayLayer::destroyPlayer(player, obj);
+        
         if (m_isPracticeMode) return;
 
         int percent = this->getCurrentPercentInt();
@@ -76,6 +77,8 @@ class $modify(MyPlayLayer, PlayLayer) {
 
     void levelComplete() {
         PlayLayer::levelComplete();
+        if (m_isPracticeMode) return;
+
         this->getScheduler()->scheduleSelector(
             schedule_selector(MyPlayLayer::captureAndSendCongrats),
             this, 0.1f, 0, 0.0f, false
@@ -94,14 +97,16 @@ class $modify(MyPlayLayer, PlayLayer) {
         std::mt19937 gen(rd());
 
         if (isVictory) {
-            if (m_fields->m_congrats.empty()) message = "GG! you actually won?";
-            else {
+            if (m_fields->m_congrats.empty()) {
+                message = "GG! you actually won?";
+            } else {
                 std::uniform_int_distribution<> dis(0, (int)m_fields->m_congrats.size() - 1);
                 message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(gen)]), m_level->m_levelName.c_str());
             }
         } else {
-            if (m_fields->m_roasts.empty()) message = "died lol skill issue";
-            else {
+            if (m_fields->m_roasts.empty()) {
+                message = "died lol skill issue";
+            } else {
                 std::uniform_int_distribution<> dis(0, (int)m_fields->m_roasts.size() - 1);
                 message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(gen)]), this->getCurrentPercentInt());
             }
