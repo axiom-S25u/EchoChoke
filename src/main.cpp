@@ -7,7 +7,6 @@
 #include <fstream>
 #include <filesystem>
 #include <chrono>
-#include <algorithm>
 
 using namespace geode::prelude;
 namespace fs = std::filesystem;
@@ -19,16 +18,6 @@ class $modify(MyPlayLayer, PlayLayer) {
         bool m_loaded = false;
         async::TaskHolder<utils::web::WebResponse> m_task;
     };
-
-    std::string trim(std::string s) {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-            return !std::isspace(ch);
-        }));
-        s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-            return !std::isspace(ch);
-        }).base(), s.end());
-        return s;
-    }
 
     bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
         if (!PlayLayer::init(level, useReplay, dontSave)) return false;
@@ -95,28 +84,22 @@ class $modify(MyPlayLayer, PlayLayer) {
     void captureAndSendCongrats(float dt) { this->sendToDiscord(true); }
 
     void sendToDiscord(bool isVictory) {
-        std::string webhook = trim(Mod::get()->getSettingValue<std::string>("webhook_url"));
-        
-        if (webhook.empty()) {
-            log::error("no webhook url set idiot");
-            return;
-        }
+        auto webhook = Mod::get()->getSettingValue<std::string>("webhook_url");
+        if (webhook.empty()) return;
 
         std::string message;
         std::random_device rd;
         std::mt19937 gen(rd());
 
         if (isVictory) {
-            if (m_fields->m_congrats.empty()) {
-                message = "GG! you actually won?";
-            } else {
+            if (m_fields->m_congrats.empty()) message = "GG! you actually won?";
+            else {
                 std::uniform_int_distribution<> dis(0, (int)m_fields->m_congrats.size() - 1);
                 message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(gen)]), m_level->m_levelName.c_str());
             }
         } else {
-            if (m_fields->m_roasts.empty()) {
-                message = "died lol skill issue";
-            } else {
+            if (m_fields->m_roasts.empty()) message = "died lol skill issue";
+            else {
                 std::uniform_int_distribution<> dis(0, (int)m_fields->m_roasts.size() - 1);
                 message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(gen)]), this->getCurrentPercentInt());
             }
@@ -129,10 +112,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         renderer->end();
 
         auto img = renderer->newCCImage();
-        if (!img) {
-            log::error("no image from renderer wtf");
-            return;
-        }
+        if (!img) return;
 
         auto path = Mod::get()->getSaveDir() / "ss.png";
         bool saved = img->saveToFile(path.string().c_str());
@@ -143,23 +123,18 @@ class $modify(MyPlayLayer, PlayLayer) {
         utils::web::MultipartForm form;
         form.param("content", message);
         auto fileRes = form.file("file", path, "image/png");
-
         if (fileRes.isErr()) return;
-
-        log::info("sending photo + text to {}", webhook);
-
         auto req = utils::web::WebRequest()
             .bodyMultipart(form)
-            .certVerification(false)
+            .header("Content-Type", "multipart/form-data")
             .timeout(std::chrono::seconds(10))
-            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)") // Standard browser UA
             .post(webhook);
 
         m_fields->m_task.spawn(std::move(req), [](utils::web::WebResponse res) {
             if (res.ok()) {
                 log::info("sent photo + text check discord");
             } else {
-                log::error("failed hard: {} | Code: {}", res.errorMessage(), res.code());
+                log::error("failed hard: {} code {}", res.errorMessage(), res.code());
             }
         });
     }
