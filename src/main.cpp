@@ -1,4 +1,5 @@
 #include <Geode/Geode.hpp>
+#include <Geode/loader/Event.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 #include <Geode/utils/web.hpp>
 #include <random>
@@ -117,24 +118,39 @@ class $modify(MyPlayLayer, PlayLayer) {
             }
         }
 
+        std::string boundary = "GeodeBoundary" + std::to_string(time(nullptr));
+        std::vector<uint8_t> body;
+        auto addStr = [&](std::string s) { body.insert(body.end(), s.begin(), s.end()); };
+
+        addStr("--" + boundary + "\r\n");
+        addStr("Content-Disposition: form-data; name=\"content\"\r\n\r\n");
+        addStr(message + "\r\n");
+        addStr("--" + boundary + "\r\n");
+        addStr("Content-Disposition: form-data; name=\"file\"; filename=\"ss.png\"\r\n");
+        addStr("Content-Type: image/png\r\n\r\n");
+
+        std::ifstream file(path, std::ios::binary);
+        std::vector<uint8_t> fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        body.insert(body.end(), fileContent.begin(), fileContent.end());
+        addStr("\r\n--" + boundary + "--\r\n");
+
         m_fields->m_listener.bind([](utils::web::WebResponseEvent* e) {
             if (auto res = e->getResponse()) {
                 if (res->ok()) {
-                    log::info("Sent to Discord successfully!");
+                    log::info("Webhook sent!");
                 } else {
-                    log::error("Discord error: {}", res->code());
+                    log::error("Webhook error: {}", res->code());
                 }
             }
         });
 
-        utils::web::MultipartForm form;
-        form.add("content", message);
-        form.addFile("file", path);
-
         m_fields->m_listener.setFilter(
             utils::web::WebRequest()
-                .bodyMultipart(form)
+                .body(body)
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                 .post(webhook, Mod::get())
         );
     }
 };
+// please compile
+
