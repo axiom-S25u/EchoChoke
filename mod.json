@@ -8,7 +8,7 @@
     },
     "id": "axiom.echochoke",
     "name": "EchoChoke",
-    "version": "v1.0.8",
+    "version": "v1.0.9",
     "developer": "Axiom",
     "description": "automatically roasts your fails and sends a screenshot to discord",
     "tags": ["joke"],
@@ -26,12 +26,18 @@
             "min": 0,
             "max": 100
 		},
+        "disable_roasts": {
+            "name": "Disable Roasts",
+            "description": "turn this on if the roasts are hurting your feelings ",
+            "type": "bool",
+            "default": false
+        },
         "enable_ping": {
 			"name": "Enable Role Ping",
 			"description": "Ping a role when you choke hard",
 			"type": "bool",
 			"default": false
-		},
+		}
 		"ping_threshold": {
 			"name": "Ping Percentage",
 			"description": "Pings only if you die at or above this %",
