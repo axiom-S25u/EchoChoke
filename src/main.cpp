@@ -9,7 +9,7 @@
 #include <chrono>
 #include <thread>
 #include <algorithm>
-// hi index staff
+
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 
@@ -24,11 +24,9 @@ class $modify(MyPlayLayer, PlayLayer) {
 
     bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
         if (!PlayLayer::init(level, useReplay, dontSave)) return false;
-
         if (!m_fields->m_loaded) {
             std::random_device rd;
             m_fields->m_rng = std::mt19937(rd());
-
             auto roastFile = Mod::get()->getSaveDir() / "roasts.txt";
             if (!fs::exists(roastFile)) {
                 std::ofstream file(roastFile);
@@ -54,13 +52,11 @@ class $modify(MyPlayLayer, PlayLayer) {
                 file << "{}%? yeah i'm telling the whole server you're washed 💀\n";
                 file.close();
             }
-
             std::ifstream rFile(roastFile);
             std::string rLine;
             while (std::getline(rFile, rLine)) {
                 if (!rLine.empty()) m_fields->m_roasts.push_back(rLine);
             }
-
             auto congratsFile = Mod::get()->getSaveDir() / "congrats.txt";
             if (!fs::exists(congratsFile)) {
                 std::ofstream file(congratsFile);
@@ -70,33 +66,26 @@ class $modify(MyPlayLayer, PlayLayer) {
                 file << "massive W on {}! now go touch grass 😭\n";
                 file.close();
             }
-
             std::ifstream cFile(congratsFile);
             std::string cLine;
             while (std::getline(cFile, cLine)) {
                 if (!cLine.empty()) m_fields->m_congrats.push_back(cLine);
             }
-
             m_fields->m_loaded = true;
         }
-
         return true;
     }
 
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
         bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_startPercent > 0;
-        
         if (isInvalid) {
             PlayLayer::destroyPlayer(player, obj);
             return;
         }
-
         int percent = this->getCurrentPercentInt();
         auto minPercent = Mod::get()->getSettingValue<int64_t>("min_percent");
         bool isNewBest = percent > m_level->m_normalPercent;
-
         PlayLayer::destroyPlayer(player, obj);
-
         if (isNewBest && percent >= minPercent) {
             this->getScheduler()->scheduleSelector(
                 schedule_selector(MyPlayLayer::captureAndSendRoast),
@@ -106,10 +95,12 @@ class $modify(MyPlayLayer, PlayLayer) {
     }
 
     void levelComplete() {
-        PlayLayer::levelComplete();
         bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_startPercent > 0;
-        if (isInvalid) return;
-
+        if (isInvalid) {
+            PlayLayer::levelComplete();
+            return;
+        }
+        PlayLayer::levelComplete();
         this->getScheduler()->scheduleSelector(
             schedule_selector(MyPlayLayer::captureAndSendCongrats),
             this, 0.1f, 0, 0.0f, false
@@ -122,62 +113,52 @@ class $modify(MyPlayLayer, PlayLayer) {
     void sendToDiscord(bool isVictory) {
         auto webhook = Mod::get()->getSettingValue<std::string>("webhook_url");
         if (webhook.empty()) return;
-
         std::string message;
         int percent = this->getCurrentPercentInt();
-
+        auto& rng = m_fields->m_rng;
         if (isVictory) {
             if (m_fields->m_congrats.empty()) {
-                message = "GG! you actually won?";
+                message = fmt::format("GG! you actually won on {}? sus", m_level->m_levelName);
             } else {
-                std::uniform_int_distribution<> dis(0, (int)m_fields->m_congrats.size() - 1);
-                message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(m_fields->m_rng)]), m_level->m_levelName.c_str());
+                std::uniform_int_distribution dis(0, (int)m_fields->m_congrats.size() - 1);
+                message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(rng)]), m_level->m_levelName.c_str());
             }
         } else {
             if (m_fields->m_roasts.empty()) {
-                message = "died lol skill issue";
+                message = fmt::format("died at {}% lol get good", percent);
             } else {
-                std::uniform_int_distribution<> dis(0, (int)m_fields->m_roasts.size() - 1);
-                message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(m_fields->m_rng)]), percent);
+                std::uniform_int_distribution dis(0, (int)m_fields->m_roasts.size() - 1);
+                message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(rng)]), percent);
             }
-
             bool shouldPing = Mod::get()->getSettingValue<bool>("enable_ping");
-            int threshold = (int)Mod::get()->getSettingValue<int64_t>("ping_threshold");
+            auto threshold = Mod::get()->getSettingValue<int64_t>("ping_threshold");
             std::string roleId = Mod::get()->getSettingValue<std::string>("role_id");
-
             if (shouldPing && percent >= threshold && !roleId.empty()) {
-                message = fmt::format("<@&{}> ", roleId) + message;
+                message = "<@&" + roleId + "> " + message;
             }
         }
-
         auto winSize = CCDirector::sharedDirector()->getWinSize();
-        auto renderer = CCRenderTexture::create(winSize.width, winSize.height);
-        renderer->begin();
+        auto renderer = CCRenderTexture::create((int)winSize.width, (int)winSize.height);
+        if (!renderer) return;
+        renderer->beginWithClear(0, 0, 0, 0);
         this->visit();
         renderer->end();
-
-        auto img = renderer->newCCImage();
+        auto img = renderer->newCCImage(true);
         if (!img) return;
-
         auto path = Mod::get()->getSaveDir() / "ss.png";
-
-        std::thread([this, img, path, message, webhook]() {
-            bool saved = img->saveToFile(path.string().c_str());
+        std::thread([path, message, webhook, img]() {
+            bool ok = img->saveToFile(path.string().c_str());
             img->release();
-
-            if (!saved) return;
-
-            geode::Loader::get()->queueInMainThread([this, path, message, webhook]() {
+            if (!ok) return;
+            Loader::get()->queueInMainThread([path, message, webhook]() {
                 utils::web::MultipartForm form;
                 form.param("content", message);
-                auto fileRes = form.file("file", path, "image/png");
-                if (fileRes.isErr()) return;
-
+                auto file = form.file("file", path, "image/png");
+                if (file.isErr()) return;
                 auto req = utils::web::WebRequest()
                     .bodyMultipart(form)
-                    .timeout(std::chrono::seconds(10))
+                    .timeout(std::chrono::seconds(12))
                     .post(webhook);
-
                 m_fields->m_task.spawn(std::move(req), [](utils::web::WebResponse res) {
                     if (res.ok()) {
                         log::info("sent, check discord");
