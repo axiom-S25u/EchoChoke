@@ -44,7 +44,7 @@
 			"name": "Discord Role ID",
 			"description": "The ID of the role to ping (Right click role -> Copy ID)",
 			"type": "string",
-			"default": ""
+			"default": "",
             "filter": "1234567890"
 		}
 	}
