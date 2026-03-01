@@ -77,7 +77,7 @@ class $modify(MyPlayLayer, PlayLayer) {
     }
 
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
-        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_startPercent > 0;
+        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer();
         if (isInvalid) {
             PlayLayer::destroyPlayer(player, obj);
             return;
@@ -95,12 +95,9 @@ class $modify(MyPlayLayer, PlayLayer) {
     }
 
     void levelComplete() {
-        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_startPercent > 0;
-        if (isInvalid) {
-            PlayLayer::levelComplete();
-            return;
-        }
+        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer();
         PlayLayer::levelComplete();
+        if (isInvalid) return;
         this->getScheduler()->scheduleSelector(
             schedule_selector(MyPlayLayer::captureAndSendCongrats),
             this, 0.1f, 0, 0.0f, false
@@ -146,11 +143,11 @@ class $modify(MyPlayLayer, PlayLayer) {
         auto img = renderer->newCCImage(true);
         if (!img) return;
         auto path = Mod::get()->getSaveDir() / "ss.png";
-        std::thread([path, message, webhook, img]() {
+        std::thread([this, path, message, webhook, img]() {
             bool ok = img->saveToFile(path.string().c_str());
             img->release();
             if (!ok) return;
-            Loader::get()->queueInMainThread([path, message, webhook]() {
+            Loader::get()->queueInMainThread([this, path, message, webhook]() {
                 utils::web::MultipartForm form;
                 form.param("content", message);
                 auto file = form.file("file", path, "image/png");
