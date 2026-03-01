@@ -9,7 +9,7 @@
 #include <chrono>
 #include <thread>
 #include <algorithm>
-// hi
+// hi index staff
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 
@@ -84,7 +84,7 @@ class $modify(MyPlayLayer, PlayLayer) {
     }
 
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
-        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_isStartPos;
+        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_startPercent > 0;
         
         if (isInvalid) {
             PlayLayer::destroyPlayer(player, obj);
@@ -107,7 +107,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 
     void levelComplete() {
         PlayLayer::levelComplete();
-        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_isStartPos;
+        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_startPercent > 0;
         if (isInvalid) return;
 
         this->getScheduler()->scheduleSelector(
