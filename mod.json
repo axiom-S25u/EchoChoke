@@ -25,6 +25,26 @@
             "default": 1,
             "min": 0,
             "max": 100
-        }
-    }
+        "enable_ping": {
+			"name": "Enable Role Ping",
+			"description": "Ping a role when you choke hard",
+			"type": "bool",
+			"default": false
+		},
+		"ping_threshold": {
+			"name": "Ping Percentage",
+			"description": "Pings only if you die at or above this %",
+			"type": "int",
+			"default": 90,
+			"min": 1,
+			"max": 99
+		},
+		"role_id": {
+			"name": "Discord Role ID",
+			"description": "The ID of the role to ping (Right click role -> Copy ID)",
+			"type": "string",
+			"default": ""
+            "filter": "1234567890"
+		}
+	}
 }
