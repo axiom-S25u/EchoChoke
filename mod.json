@@ -25,6 +25,7 @@
             "default": 1,
             "min": 0,
             "max": 100
+		},
         "enable_ping": {
 			"name": "Enable Role Ping",
 			"description": "Ping a role when you choke hard",
