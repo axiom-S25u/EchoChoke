@@ -8,7 +8,8 @@
 #include <filesystem>
 #include <chrono>
 #include <thread>
-// meow
+#include <algorithm>
+
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 
@@ -18,12 +19,16 @@ class $modify(MyPlayLayer, PlayLayer) {
         std::vector<std::string> m_congrats;
         bool m_loaded = false;
         async::TaskHolder<utils::web::WebResponse> m_task;
+        std::mt19937 m_rng;
     };
 
     bool init(GJGameLevel* level, bool useReplay, bool dontSave) {
         if (!PlayLayer::init(level, useReplay, dontSave)) return false;
 
         if (!m_fields->m_loaded) {
+            std::random_device rd;
+            m_fields->m_rng = std::mt19937(rd());
+
             auto roastFile = Mod::get()->getSaveDir() / "roasts.txt";
             if (!fs::exists(roastFile)) {
                 std::ofstream file(roastFile);
@@ -40,6 +45,14 @@ class $modify(MyPlayLayer, PlayLayer) {
                 file << "ok but who actually dies at {}%? oh wait, you do 💀\n";
                 file << "bro's heartbeat peaked just to fail at {}%... tragic 🙏\n";
                 file << "{}%... i'd be embarrassed to let the webhook even send this 🥂\n";
+                file << "bro really saw {}% and decided to stop breathing 💀\n";
+                file << "nice {}% fail bro, keep it up and you'll reach 100% by 2030 🙏\n";
+                file << "i've seen better gameplay from a literal rock. {}%? embarrassing 😭\n";
+                file << "{}%... is your monitor even turned on? 💀\n";
+                file << "bro clicked 0.0001s too late at {}% and lost his soul 🙏\n";
+                file << "invest in a better gaming chair if you're dying at {}% 🥂\n";
+                file << "{}%? yeah i'm telling the whole server you're washed 💀\n";
+                file << "Axiom says u have a skill issue.. {}, how do u even acheive that? 💀\n";
                 file.close();
             }
 
@@ -54,6 +67,8 @@ class $modify(MyPlayLayer, PlayLayer) {
                 std::ofstream file(congratsFile);
                 file << "GG WP! You beat {}! 🥂\n";
                 file << "Wait... you actually finished {}? hackers smh 💀\n";
+                file << "bro finally finished {} after 5 years 🙏\n";
+                file << "massive W on {}! now go touch grass 😭\n";
                 file.close();
             }
 
@@ -70,14 +85,15 @@ class $modify(MyPlayLayer, PlayLayer) {
     }
 
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
-        if (m_isPracticeMode) {
+        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_levelSettings->m_startPosObject;
+        
+        if (isInvalid) {
             PlayLayer::destroyPlayer(player, obj);
             return;
         }
 
         int percent = this->getCurrentPercentInt();
         auto minPercent = Mod::get()->getSettingValue<int64_t>("min_percent");
-        
         bool isNewBest = percent > m_level->m_normalPercent;
 
         PlayLayer::destroyPlayer(player, obj);
@@ -92,7 +108,8 @@ class $modify(MyPlayLayer, PlayLayer) {
 
     void levelComplete() {
         PlayLayer::levelComplete();
-        if (m_isPracticeMode) return;
+        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_levelSettings->m_startPosObject;
+        if (isInvalid) return;
 
         this->getScheduler()->scheduleSelector(
             schedule_selector(MyPlayLayer::captureAndSendCongrats),
@@ -108,22 +125,29 @@ class $modify(MyPlayLayer, PlayLayer) {
         if (webhook.empty()) return;
 
         std::string message;
-        std::random_device rd;
-        std::mt19937 gen(rd());
+        int percent = this->getCurrentPercentInt();
 
         if (isVictory) {
             if (m_fields->m_congrats.empty()) {
                 message = "GG! you actually won?";
             } else {
                 std::uniform_int_distribution<> dis(0, (int)m_fields->m_congrats.size() - 1);
-                message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(gen)]), m_level->m_levelName.c_str());
+                message = fmt::format(fmt::runtime(m_fields->m_congrats[dis(m_fields->m_rng)]), m_level->m_levelName.c_str());
             }
         } else {
             if (m_fields->m_roasts.empty()) {
                 message = "died lol skill issue";
             } else {
                 std::uniform_int_distribution<> dis(0, (int)m_fields->m_roasts.size() - 1);
-                message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(gen)]), this->getCurrentPercentInt());
+                message = fmt::format(fmt::runtime(m_fields->m_roasts[dis(m_fields->m_rng)]), percent);
+            }
+
+            bool shouldPing = Mod::get()->getSettingValue<bool>("enable_ping");
+            int threshold = Mod::get()->getSettingValue<int64_t>("ping_threshold");
+            std::string roleId = Mod::get()->getSettingValue<std::string>("role_id");
+
+            if (shouldPing && percent >= threshold && !roleId.empty()) {
+                message = fmt::format("<@&{}> ", roleId) + message;
             }
         }
 
@@ -166,3 +190,4 @@ class $modify(MyPlayLayer, PlayLayer) {
         }).detach();
     }
 };
+// meow, if any mod sees this pls ping me i need to know
