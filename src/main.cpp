@@ -9,7 +9,7 @@
 #include <chrono>
 #include <thread>
 #include <algorithm>
-
+// hi
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 
@@ -52,7 +52,6 @@ class $modify(MyPlayLayer, PlayLayer) {
                 file << "bro clicked 0.0001s too late at {}% and lost his soul 🙏\n";
                 file << "invest in a better gaming chair if you're dying at {}% 🥂\n";
                 file << "{}%? yeah i'm telling the whole server you're washed 💀\n";
-                file << "Axiom says u have a skill issue.. {}, how do u even acheive that? 💀\n";
                 file.close();
             }
 
@@ -85,7 +84,7 @@ class $modify(MyPlayLayer, PlayLayer) {
     }
 
     void destroyPlayer(PlayerObject* player, GameObject* obj) {
-        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_levelSettings->m_startPosObject;
+        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_isStartPos;
         
         if (isInvalid) {
             PlayLayer::destroyPlayer(player, obj);
@@ -108,7 +107,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 
     void levelComplete() {
         PlayLayer::levelComplete();
-        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_levelSettings->m_startPosObject;
+        bool isInvalid = m_isPracticeMode || m_isTestMode || m_level->isPlatformer() || m_isStartPos;
         if (isInvalid) return;
 
         this->getScheduler()->scheduleSelector(
@@ -143,7 +142,7 @@ class $modify(MyPlayLayer, PlayLayer) {
             }
 
             bool shouldPing = Mod::get()->getSettingValue<bool>("enable_ping");
-            int threshold = Mod::get()->getSettingValue<int64_t>("ping_threshold");
+            int threshold = (int)Mod::get()->getSettingValue<int64_t>("ping_threshold");
             std::string roleId = Mod::get()->getSettingValue<std::string>("role_id");
 
             if (shouldPing && percent >= threshold && !roleId.empty()) {
@@ -190,4 +189,3 @@ class $modify(MyPlayLayer, PlayLayer) {
         }).detach();
     }
 };
-// meow, if any mod sees this pls ping me i need to know
