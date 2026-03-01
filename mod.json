@@ -37,7 +37,7 @@
 			"description": "Ping a role when you choke hard",
 			"type": "bool",
 			"default": false
-		}
+		},
 		"ping_threshold": {
 			"name": "Ping Percentage",
 			"description": "Pings only if you die at or above this %",
