@@ -16,3 +16,8 @@
  * meow
 # 1.0.11
  * added github and discord links
+# 1.0.12
+ * track consecutive deaths at the exact same %
+ * if you die at the same % more than 5 times, send a "stuck" message to the webhook (appends to roast on new best, otherwise sends a text-only message)
+ * added setting: Enable Stuck Messages
+ * windows build fix: add /FS to prevent PDB C1041 errors

@@ -36,15 +36,21 @@
             "type": "bool",
             "default": false
         },
+        "enable_stuck_messages": {
+            "name": "Enable Stuck Messages",
+            "description": "send an extra message when you die at the exact same % more than 5 times in a row",
+            "type": "bool",
+            "default": true
+        },
         "enable_ping": {
 			"name": "Enable Role Ping",
-			"description": "Ping a role when you choke hard",
+			"description": "ping a role when you choke hard",
 			"type": "bool",
 			"default": false
 		},
 		"ping_threshold": {
 			"name": "Ping Percentage",
-			"description": "Pings only if you die at or above this %",
+			"description": "pings only if you die at or above this %",
 			"type": "int",
 			"default": 90,
 			"min": 1,
@@ -52,7 +58,7 @@
 		},
 		"role_id": {
 			"name": "Discord Role ID",
-			"description": "The ID of the role to ping (Right click role -> Copy ID)",
+			"description": "the id of the role to ping (right click role -> copy id)",
 			"type": "string",
 			"default": "",
             "filter": "1234567890"
