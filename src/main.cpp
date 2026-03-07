@@ -63,7 +63,7 @@ class $modify(MyPlayLayer, PlayLayer) {
                 "bro really choked at {}% on []... just uninstall already 💀",
                 "{}%... i've seen bot accounts with better consistency 🙏",
                 "imagine dying at {}% in 2026 🥂",
-                "{}% is crazy. xseek professional help 💀",
+                "{}% is crazy. seek professional help 💀",
                 "bro's heart rate went to 200 just to fail at {}% 😭 ()",
                 "{}%... i'd rather watch paint dry than this gameplay 💀",
                 "bro really hit the pause button on life at {}% 🙏",
