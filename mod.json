@@ -1,5 +1,5 @@
 {
-    "geode": "5.0.0",
+    "geode": "5.1.0",
     "gd": {
         "win": "2.2081",
         "mac": "2.2081",
@@ -8,8 +8,12 @@
     },
     "id": "axiom.echochoke",
     "name": "EchoChoke",
-    "version": "v1.0.11",
+    "version": "v1.0.12",
     "developer": "Axiom",
+    "links": {
+        "source": "https://github.com/axiom-S25u/EchoChoke",
+        "community": "https://discord.gg/TWn99qzmUA"
+    },
     "description": "automatically roasts your fails and sends a screenshot to discord",
     "tags": ["joke", "utility", "enhancement"],
     "settings": {

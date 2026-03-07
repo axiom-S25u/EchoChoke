@@ -14,3 +14,5 @@
  * added variables like (), [], {}, <>, !!, and ~~
  * added custom message formatting
  * meow
+# 1.0.11
+ * added github and discord links
