@@ -227,7 +227,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         : GJAccountManager::sharedState()->m_username;
         
         std::string level = m_level->m_levelName;
-        std::string attempts = geode::utils::numToString(static_cast<int>(m_level->m_attempts));
+        std::string attempts = geode::utils::numToString(static_cast<int>(GJBaseGameLayer::get()->m_attempts));
         
         std::string timeStr = fmt::format(
             "{:02}:{:02}",
