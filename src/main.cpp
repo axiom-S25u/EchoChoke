@@ -5,7 +5,28 @@
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 
+static bool inDestroyPlayer = false;
+
+class $modify(NoclipDetectPre, PlayLayer) {
+    static void onModify(auto& self) {
+        (void) self.setHookPriority("PlayLayer::destroyPlayer", -0x800000);
+    }
+
+    void destroyPlayer(PlayerObject* player, GameObject* object) override {
+        if (object != m_anticheatSpike) inDestroyPlayer = true;
+        PlayLayer::destroyPlayer(player, object);
+
+        if (inDestroyPlayer) {
+            inDestroyPlayer = false;
+        }
+    }
+};
+
+
 class $modify(MyPlayLayer, PlayLayer) {
+    static void onModify(auto& self) {
+        (void) self.setHookPriority("PlayLayer::destroyPlayer", 0x800000);
+    }
     struct Fields {
         std::vector<std::string> m_roasts;
         std::vector<std::string> m_congrats;
@@ -119,7 +140,8 @@ class $modify(MyPlayLayer, PlayLayer) {
         }
     }
     
-    void destroyPlayer(PlayerObject* player, GameObject* obj) {
+    void destroyPlayer(PlayerObject* player, GameObject* obj) override {
+        inDestroyPlayer = false;
         if (obj == m_anticheatSpike) {
             PlayLayer::destroyPlayer(player, obj);
             return;
@@ -275,7 +297,10 @@ class $modify(MyPlayLayer, PlayLayer) {
             m_fields->m_pendingStuckMessage.clear();
         }
         
-        auto size = CCDirector::sharedDirector()->getWinSize();
+        auto director = CCDirector::sharedDirector();
+        auto glview = director->getOpenGLView();
+        auto size = director->getWinSize();
+        
         int logicalWidth = static_cast<int>(size.width);
         int logicalHeight = static_cast<int>(size.height);
         
@@ -293,7 +318,23 @@ class $modify(MyPlayLayer, PlayLayer) {
             int pixelWidth = static_cast<int>(texSize.width);
             int pixelHeight = static_cast<int>(texSize.height);
             
-
+            auto oldScaleX = glview->m_fScaleX;
+            auto oldScaleY = glview->m_fScaleY;
+            auto oldResolution = glview->getDesignResolutionSize();
+            auto oldScreenSize = glview->m_obScreenSize;
+            
+            auto displayFactor = geode::utils::getDisplayFactor();
+            glview->m_fScaleX = static_cast<float>(pixelWidth) / size.width / displayFactor;
+            glview->m_fScaleY = static_cast<float>(pixelHeight) / size.height / displayFactor;
+            
+            auto aspectRatio = static_cast<float>(pixelWidth) / static_cast<float>(pixelHeight);
+            auto newRes = CCSize{ std::round(320.f * aspectRatio), 320.f };
+            
+            director->m_obWinSizeInPoints = newRes;
+            glview->m_obScreenSize = CCSize{ static_cast<float>(pixelWidth), static_cast<float>(pixelHeight) };
+            glview->setDesignResolutionSize(newRes.width, newRes.height, kResolutionExactFit);
+            
+            
             rt->beginWithClear(0, 0, 0, 0);
             this->visit();
             
@@ -303,6 +344,13 @@ class $modify(MyPlayLayer, PlayLayer) {
             glReadPixels(0, 0, pixelWidth, pixelHeight, GL_RGBA, GL_UNSIGNED_BYTE, rawData->data());
             
             rt->end();
+            
+            glview->m_fScaleX = oldScaleX;
+            glview->m_fScaleY = oldScaleY;
+            director->m_obWinSizeInPoints = oldResolution;
+            glview->m_obScreenSize = oldScreenSize;
+            glview->setDesignResolutionSize(oldResolution.width, oldResolution.height, kResolutionExactFit);
+            director->setViewport();
             
             uint32_t randomId = m_fields->m_rng.generate<uint32_t>();
             auto tmp = utils::string::pathToString(
