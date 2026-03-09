@@ -186,9 +186,13 @@ class $modify(MyPlayLayer, PlayLayer) {
         
         auto minPercent = Mod::get()->getSettingValue<int64_t>("min_percent");
         
+        // slideglide u forgot to check for new best grr
+        int currentBest = m_level->m_normalPercent;
+        bool isNewBest = percent > currentBest;
+
         PlayLayer::destroyPlayer(player, obj);
         
-        if (percent >= minPercent) {
+        if (isNewBest && percent >= minPercent) {
             this->getScheduler()->scheduleSelector(
                 schedule_selector(MyPlayLayer::captureAndSendRoast),
                 this, 0.1f, 0, 0.f, false
