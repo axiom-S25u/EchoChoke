@@ -1,14 +1,14 @@
 {
     "geode": "5.3.0",
     "gd": {
-        "win": "*",
-        "mac": "*",
-        "ios": "*",
-        "android": "*"
+        "win": "2.2081",
+        "mac": "2.2081",
+        "ios": "2.2081",
+        "android": "2.2081"
     },
     "id": "axiom.echochoke",
     "name": "EchoChoke",
-    "version": "v1.1.0",
+    "version": "v1.1.3",
     "developer": "Axiom, Slideglide",
     "links": {
         "source": "https://github.com/axiom-S25u/EchoChoke",
