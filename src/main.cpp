@@ -3,75 +3,57 @@
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/utils/web.hpp>
 #include <Geode/ui/Popup.hpp>
+#include <Geode/ui/Button.hpp>
 
 using namespace geode::prelude;
 namespace fs = std::filesystem;
 
 static bool inDestroyPlayer = false;
-// i dont get why ppl dont read the description, i had to add this.. 
-class EchoChokeWarningPopup : public Popup {
+// i dont get why ppl dont read the description, i had to add this..
+// ok this might help i guess
+class EchoChokeToast : public CCNode {
 protected:
-    CCMenuItemSpriteExtra* m_okBtn = nullptr;
-    int m_countdown = 5;
+    bool init() {
+        if (!CCNode::init()) return false;
 
-    bool init(float width, float height) {
-        if (!Popup::init(width, height)) return false;
+        auto bg = CCScale9Sprite::create("GJ_square01.png");
+        bg->setContentSize({130, 65});
+        bg->setAnchorPoint({0, 0});
+        this->addChild(bg);
 
-        this->setTitle("EchoChoke - READ THIS");
+        auto title = CCLabelBMFont::create("ECHOCHOKE", "goldFont.fnt");
+        title->setScale(0.35f);
+        title->setPosition({65, 52});
+        this->addChild(title);
 
-        auto content = CCLabelBMFont::create(
-            "this mod ONLY sends roasts on\nNEW BEST deaths, not every death.\nset your webhook URL in mod settings\nor nothing will work. go do that bro",
-            "chatFont.fnt"
-        );
-        content->setScale(0.55f);
-        content->setAlignment(kCCTextAlignmentCenter);
-        content->setPosition({width / 2, height / 2 + 15});
-        m_mainLayer->addChild(content);
+        auto msg = CCLabelBMFont::create("IT WONT WORK\nUNLESS ITS A\nNEW BEST.", "bigFont.fnt");
+        msg->setScale(0.22f);
+        msg->setAlignment(kCCTextAlignmentCenter);
+        msg->setPosition({65, 22});
+        this->addChild(msg);
 
-        auto okSpr = ButtonSprite::create("OK (5)", "goldFont.fnt", "GJ_button_01.png", 0.8f);
-        okSpr->setColor({130, 130, 130});
+        this->setPosition({5, 160});
+        this->setScale(0.1f);
 
-        m_okBtn = CCMenuItemSpriteExtra::create(
-            okSpr,
-            this,
-            menu_selector(EchoChokeWarningPopup::onOkBtn)
-        );
-        m_okBtn->setEnabled(false);
-
-        auto menu = CCMenu::create();
-        menu->addChild(m_okBtn);
-        menu->setPosition({width / 2, 28});
-        m_mainLayer->addChild(menu);
-
-        this->getScheduler()->scheduleSelector(
-            schedule_selector(EchoChokeWarningPopup::tickCountdown),
-            this, 1.0f, 4, 0.f, false
-        );
+        this->runAction(CCSequence::create(
+            CCEaseBackOut::create(CCScaleTo::create(0.3f, 1.0f)),
+            CCDelayTime::create(5.0f),
+            CCEaseBackIn::create(CCScaleTo::create(0.3f, 0.0f)),
+            CCCallFunc::create(this, callfunc_selector(EchoChokeToast::removeSelf)),
+            nullptr
+        ));
 
         return true;
     }
 
-    void tickCountdown(float) {
-        m_countdown--;
-        auto spr = static_cast<ButtonSprite*>(m_okBtn->getNormalImage());
-        if (m_countdown <= 0) {
-            m_okBtn->setEnabled(true);
-            spr->setString("OK");
-            spr->setColor({255, 255, 255});
-        } else {
-            std::string txt = "OK (" + std::to_string(m_countdown) + ")";
-            spr->setString(txt.c_str());
-        }
-    }
-
-    void onOkBtn(CCObject*) {
-        this->onClose(nullptr);
+    void removeSelf() {
+        this->removeFromParent();
     }
 
 public:
-    static EchoChokeWarningPopup* create() {
-        auto ret = new EchoChokeWarningPopup();
-        if (ret->init(340.f, 210.f)) {
+    static EchoChokeToast* create() {
+        auto ret = new EchoChokeToast();
+        if (ret->init()) {
             ret->autorelease();
             return ret;
         }
@@ -84,11 +66,8 @@ class $modify(EchoChokeMenuLayer, MenuLayer) {
     bool init() {
         if (!MenuLayer::init()) return false;
 
-        if (!Mod::get()->getSavedValue<bool>("shown_warning_v2")) {
-            Mod::get()->setSavedValue("shown_warning_v2", true);
-            auto popup = EchoChokeWarningPopup::create();
-            popup->show();
-        }
+        auto toast = EchoChokeToast::create();
+        this->addChild(toast, 999);
 
         return true;
     }
@@ -122,14 +101,15 @@ static std::vector<LevelPercentRule> parsePerLevelRules(const std::string& input
         if (trimmed.empty()) continue;
         auto colonPos = trimmed.find(':');
         if (colonPos == std::string::npos) continue;
-        std::string idPart = trimmed.substr(0, colonPos);
-        std::string pctPart = trimmed.substr(colonPos + 1);
-        try {
-            LevelPercentRule rule;
-            rule.levelId = std::stoi(utils::string::trim(idPart));
-            rule.minPercent = std::stof(utils::string::trim(pctPart));
-            rules.push_back(rule);
-        } catch (...) {}
+        std::string idPart = utils::string::trim(trimmed.substr(0, colonPos));
+        std::string pctPart = utils::string::trim(trimmed.substr(colonPos + 1));
+        auto idRes = utils::numFromString<int>(idPart);
+        auto pctRes = utils::numFromString<float>(pctPart);
+        if (!idRes || !pctRes) continue;
+        LevelPercentRule rule;
+        rule.levelId = idRes.unwrap();
+        rule.minPercent = pctRes.unwrap();
+        rules.push_back(rule);
     }
     return rules;
 }
@@ -414,12 +394,11 @@ class $modify(MyPlayLayer, PlayLayer) {
             for (auto& part : parts) {
                 auto trimmed = utils::string::trim(part);
                 if (trimmed.empty()) continue;
-                try {
-                    if (std::stoi(trimmed) == levelID) {
-                        PlayLayer::destroyPlayer(player, obj);
-                        return;
-                    }
-                } catch (...) {}
+                auto parsed = utils::numFromString<int>(trimmed);
+                if (parsed && parsed.unwrap() == levelID) {
+                    PlayLayer::destroyPlayer(player, obj);
+                    return;
+                }
             }
         }
 
@@ -447,12 +426,11 @@ class $modify(MyPlayLayer, PlayLayer) {
                     auto trimmed = utils::string::trim(part);
                     if (trimmed.empty()) continue;
                     if (trimmed.find(':') != std::string::npos) continue;
-                    try {
-                        if (std::stoi(trimmed) == levelID) {
-                            foundInWhitelist = true;
-                            break;
-                        }
-                    } catch (...) {}
+                    auto parsed = utils::numFromString<int>(trimmed);
+                    if (parsed && parsed.unwrap() == levelID) {
+                        foundInWhitelist = true;
+                        break;
+                    }
                 }
             }
 
