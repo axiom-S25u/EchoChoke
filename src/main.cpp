@@ -11,6 +11,7 @@ namespace fs = std::filesystem;
 static bool inDestroyPlayer = false;
 // i dont get why ppl dont read the description, i had to add this..
 // ok this might help i guess
+// another person msged me on "it doesnt work"
 class EchoChokeToast : public CCNode {
 protected:
     bool init() {
@@ -103,9 +104,12 @@ static std::vector<LevelPercentRule> parsePerLevelRules(const std::string& input
         if (colonPos == std::string::npos) continue;
         std::string idPart = utils::string::trim(trimmed.substr(0, colonPos));
         std::string pctPart = utils::string::trim(trimmed.substr(colonPos + 1));
+        
         auto idRes = utils::numFromString<int>(idPart);
         auto pctRes = utils::numFromString<float>(pctPart);
+        
         if (!idRes || !pctRes) continue;
+        
         LevelPercentRule rule;
         rule.levelId = idRes.unwrap();
         rule.minPercent = pctRes.unwrap();

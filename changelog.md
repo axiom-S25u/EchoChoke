@@ -1,3 +1,6 @@
+## 1.1.2
+* fixed bugs
+
 ## 1.1.0
 * added per-level minimum percent via `id:percent` format in whitelist (e.g. `34057654:40,83914474:57.41`)
 * decimal percent support — deaths now show as `67.41%` instead of just `67%`
