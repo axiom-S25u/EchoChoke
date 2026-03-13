@@ -28,14 +28,14 @@
             "description": "paste your webhook here. on android, tap away from keyboard after pasting to save it!",
             "type": "string",
             "default": "",
-            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',."
         },
         "proxy_url": {
             "name": "Proxy URL (Turkey / ISP fix)",
             "description": "if discord is blocked in your country, deploy a cloudflare worker and paste its URL here. leave empty if discord works fine for you",
             "type": "string",
             "default": "",
-            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',."
         },
         "min_percent": {
             "name": "Min Percent",
@@ -86,13 +86,14 @@
             "description": "if not empty, ONLY these levels will send roasts. supports per-level min % with id:percent format. examples: 128, 1234567 OR 34057654:40,83914474:57.41 OR mix both: 128,34057654:40",
             "type": "string",
             "default": "",
-            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!"
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',."
         },
         "level_blacklist": {
             "name": "Level Blacklist",
             "description": "comma-separated level IDs to NEVER send roasts for. useful for hiding upcoming projects. example: 128, 1234567, 99999",
             "type": "string",
-            "default": ""
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',."
         },
         "enable_ping": {
             "name": "Enable Role Ping",
