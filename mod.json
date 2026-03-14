@@ -28,14 +28,14 @@
             "description": "paste your webhook here. on android, tap away from keyboard after pasting to save it!",
             "type": "string",
             "default": "",
-            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',."
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._"
         },
         "proxy_url": {
             "name": "Proxy URL (Turkey / ISP fix)",
             "description": "if discord is blocked in your country, deploy a cloudflare worker and paste its URL here. leave empty if discord works fine for you",
             "type": "string",
             "default": "",
-            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',."
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._"
         },
         "min_percent": {
             "name": "Min Percent",
