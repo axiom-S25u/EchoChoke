@@ -1,14 +1,14 @@
 {
     "geode": "5.3.0",
     "gd": {
-        "win": "*",
-        "mac": "*",
-        "ios": "*",
-        "android": "*"
+        "win": "2.2081",
+        "mac": "2.2081",
+        "ios": "2.2081",
+        "android": "2.2081"
     },
     "id": "axiom.echochoke",
     "name": "EchoChoke",
-    "version": "v1.1.0",
+    "version": "v1.1.6",
     "developer": "Axiom, Slideglide",
     "links": {
         "source": "https://github.com/axiom-S25u/EchoChoke",
@@ -25,15 +25,17 @@
         },
         "webhook_url": {
             "name": "Discord Webhook URL",
-            "description": "paste your webhook here. on android, tap away from keyboard after pasting to save it!",
+            "description": "Paste your webhook here. On Android, tap away from the keyboard after pasting to save it!",
             "type": "string",
-            "default": ""
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
         },
         "proxy_url": {
             "name": "Proxy URL (Turkey / ISP fix)",
-            "description": "if discord is blocked in your country, deploy a cloudflare worker and paste its URL here. leave empty if discord works fine for you",
+            "description": "If Discord is blocked in your country, deploy a Cloudflare Worker and paste its URL here. Leave empty if Discord works fine.",
             "type": "string",
-            "default": ""
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
         },
         "min_percent": {
             "name": "Min Percent",
@@ -83,13 +85,15 @@
             "name": "Level Whitelist / Per-Level Min %",
             "description": "if not empty, ONLY these levels will send roasts. supports per-level min % with id:percent format. examples: 128, 1234567 OR 34057654:40,83914474:57.41 OR mix both: 128,34057654:40",
             "type": "string",
-            "default": ""
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',."
         },
         "level_blacklist": {
             "name": "Level Blacklist",
             "description": "comma-separated level IDs to NEVER send roasts for. useful for hiding upcoming projects. example: 128, 1234567, 99999",
             "type": "string",
-            "default": ""
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',."
         },
         "enable_ping": {
             "name": "Enable Role Ping",
@@ -110,7 +114,7 @@
             "description": "the id of the role to ping (right click role -> copy id)",
             "type": "string",
             "default": "",
-            "filter": "1234567890"
+            "filter": "0123456789"
         }
     }
 }
