@@ -603,7 +603,7 @@ class $modify(MyPlayLayer, PlayLayer) {
             } else {
                 uint32_t rareRoll = m_fields->m_rng.generate<uint32_t>() % 20;
                 if (rareRoll == 0) {
-                    raw = "me personally, Axiom say () has been grinding [] for ## and still dying. tragic.";
+                    raw = "personally, as Axiom, () has been grinding [] for ## and still dying. tragic.";
                 } else {
                     size_t index = m_fields->m_rng.generate<size_t>() % m_fields->m_platformerRoasts.size();
                     raw = m_fields->m_platformerRoasts[index];
@@ -612,7 +612,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         } else {
             uint32_t rareRoll = m_fields->m_rng.generate<uint32_t>() % 20;
             if (rareRoll == 0) {
-                raw = "me personally, Axiom say () have a massive skill issue at {}%. pathetic.";
+                raw = "me personally, as Axiom, im saying () has a massive skill issue at {}%. pathetic.";
             } else if (m_fields->m_roasts.empty()) {
                 raw = "died at {}% lol get good";
             } else {
