@@ -8,11 +8,11 @@
     },
     "id": "axiom.echochoke",
     "name": "EchoChoke",
-    "version": "v1.2.11",
+    "version": "v1.2.12",
     "developers": ["Axiom, Slideglide", "MalikHw47"],
     "links": {
         "source": "https://github.com/axiom-S25u/EchoChoke",
-        "community": "https://discord.gg/TWn99qzmUA"
+        "community": "https://discord.gg/ckwYqVyXKm"
     },
     "description": "automatically roasts your fails and sends a screenshot to discord",
     "tags": ["joke", "utility", "enhancement"],
