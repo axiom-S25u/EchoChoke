@@ -8,7 +8,7 @@
     },
     "id": "axiom.echochoke",
     "name": "EchoChoke",
-    "version": "v1.2.12",
+    "version": "v1.3.0",
     "developers": ["Axiom, Slideglide", "MalikHw47"],
     "links": {
         "source": "https://github.com/axiom-S25u/EchoChoke",
@@ -135,6 +135,73 @@
             "default": 20,
             "min": 0,
             "max": 200
+        },
+        "extra_webhooks_title": {
+            "type": "title",
+            "name": "Extra Webhooks"
+        },
+        "webhook_url_2": {
+            "name": "Extra Webhook URL 2",
+            "description": "Additional Discord webhook to also send roasts to. Leave empty to disable.",
+            "type": "string",
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
+        },
+        "webhook_url_3": {
+            "name": "Extra Webhook URL 3",
+            "description": "Additional Discord webhook to also send roasts to. Leave empty to disable.",
+            "type": "string",
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
+        },
+        "webhook_url_4": {
+            "name": "Extra Webhook URL 4",
+            "description": "Additional Discord webhook to also send roasts to. Leave empty to disable.",
+            "type": "string",
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
+        },
+        "webhook_url_5": {
+            "name": "Extra Webhook URL 5",
+            "description": "Additional Discord webhook to also send roasts to. Leave empty to disable.",
+            "type": "string",
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
+        },
+        "webhook_url_6": {
+            "name": "Extra Webhook URL 6",
+            "description": "Additional Discord webhook to also send roasts to. Leave empty to disable.",
+            "type": "string",
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
+        },
+        "webhook_url_7": {
+            "name": "Extra Webhook URL 7",
+            "description": "Additional Discord webhook to also send roasts to. Leave empty to disable.",
+            "type": "string",
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
+        },
+        "webhook_url_8": {
+            "name": "Extra Webhook URL 8",
+            "description": "Additional Discord webhook to also send roasts to. Leave empty to disable.",
+            "type": "string",
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
+        },
+        "webhook_url_9": {
+            "name": "Extra Webhook URL 9",
+            "description": "Additional Discord webhook to also send roasts to. Leave empty to disable.",
+            "type": "string",
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
+        },
+        "webhook_url_10": {
+            "name": "Extra Webhook URL 10",
+            "description": "Additional Discord webhook to also send roasts to. Leave empty to disable.",
+            "type": "string",
+            "default": "",
+            "filter": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!+-/:;',._?=%&"
         }
     }
 }
