@@ -7,7 +7,7 @@
         "android": "2.2081"
     },
     "id": "axiom.echochoke",
-    "name": "EchoChoke",
+    "name": "EchoChoke (Webhook, Discord)",
     "version": "v1.3.0",
     "developers": ["Axiom, Slideglide", "MalikHw47"],
     "links": {
