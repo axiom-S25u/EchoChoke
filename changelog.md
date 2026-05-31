@@ -1,3 +1,7 @@
+## 1.3.0
+* more webhooks!
+* additional 2 congrats messages
+
 ## 1.2.1
 * added setting to allow roasts on unpublished/local levels (id = 0), default off
 

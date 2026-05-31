@@ -44,6 +44,21 @@ static fs::path getQueueDir() {
     return Mod::get()->getSaveDir() / "offline_queue";
 }
 
+static std::vector<std::string> getAllWebhookUrls() {
+    auto proxyUrl = Mod::get()->getSettingValue<std::string>("proxy_url");
+    auto makeTarget = [&](const std::string& wh) -> std::string {
+        return proxyUrl.empty() ? wh : (proxyUrl + "?wh=" + wh);
+    };
+    std::vector<std::string> urls;
+    auto primary = Mod::get()->getSettingValue<std::string>("webhook_url");
+    if (!primary.empty()) urls.push_back(makeTarget(primary));
+    for (int i = 2; i <= 10; i++) {
+        auto extra = Mod::get()->getSettingValue<std::string>("webhook_url_" + std::to_string(i));
+        if (!extra.empty()) urls.push_back(makeTarget(extra));
+    }
+    return urls;
+}
+
 static void saveQueueToDisk() {
     auto dir = getQueueDir();
     std::error_code ec;
@@ -123,42 +138,47 @@ static void flushNext(float) {
         return;
     }
 
-    auto webhook = Mod::get()->getSettingValue<std::string>("webhook_url");
-    if (webhook.empty()) {
+    auto targetUrls = getAllWebhookUrls();
+    if (targetUrls.empty()) {
         s_isFlushing = false;
         return;
     }
-
-    auto proxyUrl = Mod::get()->getSettingValue<std::string>("proxy_url");
-    std::string targetUrl = proxyUrl.empty() ? webhook : (proxyUrl + "?wh=" + webhook);
 
     auto item = s_webhookQueue.front();
     s_webhookQueue.erase(s_webhookQueue.begin());
     saveQueueToDisk();
 
-    auto imgPath = item.imageFile;
+    auto imgPath = item.message;
     auto msg = item.message;
 
-    async::spawn([imgPath, msg, targetUrl, item]() -> arc::Future<void> {
-        utils::web::MultipartForm form;
-        form.param("content", msg);
-
+    async::spawn([imgPath = item.imageFile, msg = item.message, targetUrls, item]() -> arc::Future<void> {
+        std::optional<std::vector<uint8_t>> imgData;
         if (!imgPath.empty() && fs::exists(imgPath)) {
             auto readResult = utils::file::readBinary(imgPath);
-            if (readResult.isOk()) {
-                form.file("file", readResult.unwrap(), "image.png", "image/png");
+            if (readResult.isOk()) imgData = readResult.unwrap();
+        }
+
+        bool anyFailed = false;
+        for (auto& targetUrl : targetUrls) {
+            utils::web::MultipartForm form;
+            form.param("content", msg);
+            if (imgData.has_value()) {
+                form.file("file", imgData.value(), "image.png", "image/png");
+            }
+
+            auto req = utils::web::WebRequest()
+                .bodyMultipart(form)
+                .timeout(std::chrono::seconds(15))
+                .post(targetUrl);
+
+            auto res = co_await std::move(req);
+            if (!res.ok()) {
+                log::error("queued webhook failed: {} code {}", res.errorMessage(), res.code());
+                anyFailed = true;
             }
         }
 
-        auto req = utils::web::WebRequest()
-            .bodyMultipart(form)
-            .timeout(std::chrono::seconds(15))
-            .post(targetUrl);
-
-        auto res = co_await std::move(req);
-
-        if (!res.ok()) {
-            log::error("queued webhook failed: {} code {}", res.errorMessage(), res.code());
+        if (anyFailed) {
             s_webhookQueue.insert(s_webhookQueue.begin(), item);
             saveQueueToDisk();
             s_isFlushing = false;
@@ -491,6 +511,9 @@ class $modify(MyPlayLayer, PlayLayer) {
                 "the grind was real. () beat [] after !! 💀",
                 "() popped off on [] after <> attempts no cap 🥂",
                 "() said i'm not logging off till i beat [] and did it in <> attempts 😭",
+                // following by MalikHw47
+                "HOLY W (), atleast he did NOT give up after <> attempts!",
+                "!! died against (), W () again",
             };
 
             if (!fs::exists(congratsFile)) {
@@ -764,40 +787,36 @@ class $modify(MyPlayLayer, PlayLayer) {
     void sendStuckMessageOnly(float) {
         if (!Mod::get()->getSettingValue<bool>("enable_stuck_messages")) return;
 
-        auto webhook = Mod::get()->getSettingValue<std::string>("webhook_url");
-        if (webhook.empty() || m_fields->m_pendingStuckMessage.empty()) return;
+        auto targetUrls = getAllWebhookUrls();
+        if (targetUrls.empty() || m_fields->m_pendingStuckMessage.empty()) return;
 
         std::string msg = m_fields->m_pendingStuckMessage;
         m_fields->m_pendingStuckMessage.clear();
 
-        auto proxyUrl = Mod::get()->getSettingValue<std::string>("proxy_url");
-        std::string targetUrl = proxyUrl.empty() ? webhook : (proxyUrl + "?wh=" + webhook);
+        for (auto& targetUrl : targetUrls) {
+            utils::web::MultipartForm form;
+            form.param("content", msg);
 
-        utils::web::MultipartForm form;
-        form.param("content", msg);
+            auto req = utils::web::WebRequest()
+            .bodyMultipart(form)
+            .timeout(std::chrono::seconds(15))
+            .post(targetUrl);
 
-        auto req = utils::web::WebRequest()
-        .bodyMultipart(form)
-        .timeout(std::chrono::seconds(15))
-        .post(targetUrl);
-
-        m_fields->m_task.spawn(std::move(req), [msg, targetUrl](utils::web::WebResponse res) {
-            if (!res.ok()) {
-                log::error("webhook failed: {} code {}", res.errorMessage(), res.code());
-                if (!Mod::get()->getSettingValue<bool>("offline_cache")) return;
-                int64_t limit = Mod::get()->getSettingValue<int64_t>("offline_queue_limit");
-                if (limit > 0 && (int64_t)s_webhookQueue.size() >= limit) return;
-                enqueueWebhook(msg, "");
-            }
-        });
+            m_fields->m_task.spawn(std::move(req), [msg, targetUrl](utils::web::WebResponse res) {
+                if (!res.ok()) {
+                    log::error("webhook failed: {} code {}", res.errorMessage(), res.code());
+                    if (!Mod::get()->getSettingValue<bool>("offline_cache")) return;
+                    int64_t limit = Mod::get()->getSettingValue<int64_t>("offline_queue_limit");
+                    if (limit > 0 && (int64_t)s_webhookQueue.size() >= limit) return;
+                    enqueueWebhook(msg, "");
+                }
+            });
+        }
     }
 
     void sendToDiscord(bool victory) {
-        auto webhook = Mod::get()->getSettingValue<std::string>("webhook_url");
-        if (webhook.empty()) return;
-
-        auto proxyUrl = Mod::get()->getSettingValue<std::string>("proxy_url");
-        std::string targetUrl = proxyUrl.empty() ? webhook : (proxyUrl + "?wh=" + webhook);
+        auto targetUrls = getAllWebhookUrls();
+        if (targetUrls.empty()) return;
 
         bool isPlatformerMode = m_isPlatformer;
         float percent = (victory || isPlatformerMode) ? 100.f : getCurrentPercentFloat();
@@ -908,7 +927,7 @@ class $modify(MyPlayLayer, PlayLayer) {
             Mod::get()->getSaveDir() / fmt::format("tmp_screenshot_{}.png", randomId)
         );
 
-        async::spawn([rawData, pixelWidth, pixelHeight, tmp, targetUrl, finalMsg]() -> arc::Future<void> {
+        async::spawn([rawData, pixelWidth, pixelHeight, tmp, targetUrls, finalMsg]() -> arc::Future<void> {
 
             auto optData = co_await async::runtime().spawnBlocking<std::optional<std::vector<uint8_t>>>(
                 [rawData, pixelWidth, pixelHeight, tmp]() -> std::optional<std::vector<uint8_t>> {
@@ -950,19 +969,26 @@ class $modify(MyPlayLayer, PlayLayer) {
                 co_return;
             }
 
-            utils::web::MultipartForm form;
-            form.param("content", finalMsg);
-            form.file("file", std::move(optData.value()), "image.png", "image/png");
+            bool anyFailed = false;
+            for (auto& targetUrl : targetUrls) {
+                utils::web::MultipartForm form;
+                form.param("content", finalMsg);
+                form.file("file", optData.value(), "image.png", "image/png");
 
-            auto req = utils::web::WebRequest()
-            .bodyMultipart(form)
-            .timeout(std::chrono::seconds(15))
-            .post(targetUrl);
+                auto req = utils::web::WebRequest()
+                .bodyMultipart(form)
+                .timeout(std::chrono::seconds(15))
+                .post(targetUrl);
 
-            auto res = co_await std::move(req);
+                auto res = co_await std::move(req);
 
-            if (!res.ok()) {
-                log::error("webhook failed: {} code {}", res.errorMessage(), res.code());
+                if (!res.ok()) {
+                    log::error("webhook failed: {} code {}", res.errorMessage(), res.code());
+                    anyFailed = true;
+                }
+            }
+
+            if (anyFailed) {
                 if (!Mod::get()->getSettingValue<bool>("offline_cache")) co_return;
                 int64_t limit = Mod::get()->getSettingValue<int64_t>("offline_queue_limit");
                 if (limit > 0 && (int64_t)s_webhookQueue.size() >= limit) co_return;
