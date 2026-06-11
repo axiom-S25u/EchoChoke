@@ -1,3 +1,6 @@
+## 1.3.1
+* New Logo (by MalikHw47)
+
 ## 1.3.0
 * more webhooks!
 * additional 2 congrats messages
