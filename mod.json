@@ -8,7 +8,7 @@
     },
     "id": "axiom.echochoke",
     "name": "EchoChoke (Webhook, Discord)",
-    "version": "v1.3.0",
+    "version": "v1.3.1",
     "developers": ["Axiom, Slideglide", "MalikHw47"],
     "links": {
         "source": "https://github.com/axiom-S25u/EchoChoke",
