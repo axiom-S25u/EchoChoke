@@ -1,3 +1,6 @@
+## 1.4.1
+* fluke messages! new $$ placeholder for last best
+
 ## 1.4.0
 * optionality to remove the toast message from the main menu
 

@@ -351,6 +351,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         std::vector<std::string> m_roasts;
         std::vector<std::string> m_platformerRoasts;
         std::vector<std::string> m_congrats;
+        std::vector<std::string> m_flukeMessages;
         bool m_loaded = false;
 
         async::TaskHolder<utils::web::WebResponse> m_task;
@@ -367,6 +368,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 
         asp::time::Instant m_sessionStart;
         bool m_sessionStarted = false;
+        float m_lastBestPercent = 0.f;
     };
 
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
@@ -376,6 +378,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         m_fields->m_renderTexture = CCRenderTexture::create((int)size.width, (int)size.height);
         m_fields->m_sessionStart = asp::time::Instant::now();
         m_fields->m_sessionStarted = true;
+        m_fields->m_lastBestPercent = static_cast<float>(m_level->m_normalPercent.value());
 
         return true;
     }
@@ -524,6 +527,22 @@ class $modify(MyPlayLayer, PlayLayer) {
                 "!! died against (), W () again",
             };
 
+            m_fields->m_flukeMessages = {
+                // all by MalikHw47
+                "da $$ fluke crazy, ggs",
+                "bro went from $$ to 100 no cap 💀",
+                "$$ to completion in one session? sus but gg 🥂",
+                "() went from $$ 😭 to beating []",
+                "() pulled a comeback from $$ fr 🙏",
+                "the redemption arc: $$ to victory after <> attempts 💀",
+                "() said not today, went from $$ to [] victory 🥂",
+                "$$ to beat? only () could do that 😭",
+                "oli shee he fluke from $$ type shit",
+                "() really said i was at $$ and beat [] huh",
+                "from $$ to end screen, holy shit 🥂",
+                "the biggest jump: $$ to actual victory (in [])😭",
+            };
+
             if (!fs::exists(congratsFile)) {
                 auto data = utils::string::join(m_fields->m_congrats, "\n");
                 (void)utils::file::writeString(congratsFile, data);
@@ -539,6 +558,24 @@ class $modify(MyPlayLayer, PlayLayer) {
                     }
                 }
             }
+
+            auto flukeFile = Mod::get()->getSaveDir() / "fluke.txt";
+            if (!fs::exists(flukeFile)) {
+                auto data = utils::string::join(m_fields->m_flukeMessages, "\n");
+                (void)utils::file::writeString(flukeFile, data);
+            } else {
+                std::string content;
+                if (GEODE_UNWRAP_INTO_IF_OK(content, utils::file::readString(flukeFile))) {
+                    auto lines = utils::string::split(content, "\n");
+                    m_fields->m_flukeMessages.clear();
+
+                    for (auto& line : lines) {
+                        if (line.empty()) continue;
+                        m_fields->m_flukeMessages.push_back(line);
+                    }
+                }
+            }
+
             m_fields->m_loaded = true;
         }
     }
@@ -762,7 +799,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         return utils::numToString((int)s.width) + "x" + utils::numToString((int)s.height);
     }
 
-    std::string formatCustomMessage(std::string msg, float percent) {
+    std::string formatCustomMessage(std::string msg, float percent, float oldBestPercent = 0.f) {
         std::string user = GJAccountManager::sharedState()->m_username.empty()
         ? "Guest"
         : GJAccountManager::sharedState()->m_username;
@@ -780,6 +817,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 
         std::string sessionTime = getSessionTimeString();
         std::string percentStr = formatPercentString(percent);
+        std::string oldPercentStr = formatPercentString(oldBestPercent);
 
         utils::string::replaceIP(msg, "()", user);
         utils::string::replaceIP(msg, "[]", level);
@@ -788,6 +826,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         utils::string::replaceIP(msg, "!!", timeStr);
         utils::string::replaceIP(msg, "~~", getResolutionString());
         utils::string::replaceIP(msg, "##", sessionTime);
+        utils::string::replaceIP(msg, "$$", oldPercentStr);
 
         return msg;
     }
@@ -828,10 +867,16 @@ class $modify(MyPlayLayer, PlayLayer) {
 
         bool isPlatformerMode = m_isPlatformer;
         float percent = (victory || isPlatformerMode) ? 100.f : getCurrentPercentFloat();
+        float currentBest = static_cast<float>(m_level->m_normalPercent.value()); bool isNewBest = (victory || percent > currentBest);
         std::string raw;
 
         if (victory) {
-            if (m_fields->m_congrats.empty()) {
+            bool isFluke = m_fields->m_lastBestPercent <= 50.f;
+            
+            if (isFluke && !m_fields->m_flukeMessages.empty()) {
+                size_t index = m_fields->m_rng.generate<size_t>() % m_fields->m_flukeMessages.size();
+                raw = m_fields->m_flukeMessages[index];
+            } else if (m_fields->m_congrats.empty()) {
                 raw = "GG! () just beat [] 🥂";
             } else {
                 size_t index = m_fields->m_rng.generate<size_t>() % m_fields->m_congrats.size();
@@ -861,7 +906,11 @@ class $modify(MyPlayLayer, PlayLayer) {
             }
         }
 
-        std::string finalMsg = formatCustomMessage(raw, percent);
+        std::string finalMsg = formatCustomMessage(raw, percent, m_fields->m_lastBestPercent);
+
+        if (isNewBest) {
+            m_fields->m_lastBestPercent = percent;
+        }
 
         if (!victory && !isPlatformerMode && Mod::get()->getSettingValue<bool>("enable_ping")) {
             auto roleId = Mod::get()->getSettingValue<std::string>("role_id");

@@ -9,5 +9,6 @@ automatically capture your fails(BY DEFAULT, ITS ONLY NEW BESTS) and send them t
 
 ### custom roasts
 you can find roasts.txt in your mod save folder to add your own messages. use {} to show where the percentage and level name should go"# EchoChoke" 
+and fluke.txt u can make for victory from a low percentage! use $$ for old new best
 
 ### massive thank you to slideglide for improving the code
