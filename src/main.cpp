@@ -5,9 +5,10 @@
 #include <Geode/ui/Popup.hpp>
 #include <Geode/ui/Button.hpp>
 #include <matjson.hpp>
+#include <asp/fs/fs.hpp>
 
 using namespace geode::prelude;
-namespace fs = std::filesystem;
+namespace fs = asp::fs;
 
 static bool inDestroyPlayer = false;
 
@@ -40,7 +41,7 @@ static std::vector<QueuedWebhook> s_webhookQueue;
 static bool s_queueLoaded = false;
 static bool s_isFlushing = false;
 
-static fs::path getQueueDir() {
+static fs::Path getQueueDir() {
     return Mod::get()->getSaveDir() / "offline_queue";
 }
 
@@ -61,8 +62,7 @@ static std::vector<std::string> getAllWebhookUrls() {
 
 static void saveQueueToDisk() {
     auto dir = getQueueDir();
-    std::error_code ec;
-    fs::create_directories(dir, ec);
+    (void)fs::createDirAll(dir);
 
     auto indexPath = dir / "index.json";
 
@@ -71,10 +71,7 @@ static void saveQueueToDisk() {
         arr.push(matjson::Serialize<QueuedWebhook>::toJson(item));
     }
 
-    (void)utils::file::writeString(
-        utils::string::pathToString(indexPath),
-        arr.dump(matjson::NO_INDENTATION)
-    );
+    (void)utils::file::writeString(indexPath, arr.dump(matjson::NO_INDENTATION));
 }
 
 static void loadQueueFromDisk() {
@@ -85,7 +82,7 @@ static void loadQueueFromDisk() {
     auto indexPath = dir / "index.json";
     if (!fs::exists(indexPath)) return;
 
-    auto readResult = utils::file::readString(utils::string::pathToString(indexPath));
+    auto readResult = utils::file::readString(indexPath);
     if (!readResult.isOk()) return;
 
     auto parseResult = matjson::parse(readResult.unwrap());
@@ -112,14 +109,13 @@ static void enqueueWebhook(const std::string& message, const std::string& imageF
     loadQueueFromDisk();
 
     auto dir = getQueueDir();
-    std::error_code ec;
-    fs::create_directories(dir, ec);
+    (void)fs::createDirAll(dir);
 
     std::string destImg;
     if (!imageFilePath.empty() && fs::exists(imageFilePath)) {
-        auto destPath = dir / fs::path(imageFilePath).filename();
-        fs::copy_file(imageFilePath, destPath, fs::copy_options::overwrite_existing, ec);
-        destImg = utils::string::pathToString(destPath);
+        auto destPath = dir / fs::Path(imageFilePath).filename().value_or("");
+        (void)fs::copy(imageFilePath, destPath);
+        destImg = destPath.string();
     }
 
     int64_t ts = std::chrono::duration_cast<std::chrono::seconds>(
@@ -168,7 +164,7 @@ static void flushNext(float) {
 
             auto req = utils::web::WebRequest()
                 .bodyMultipart(form)
-                .timeout(std::chrono::seconds(15))
+                .timeout(asp::Duration::fromSecs(15))
                 .post(targetUrl);
 
             auto res = co_await std::move(req);
@@ -186,8 +182,7 @@ static void flushNext(float) {
         }
 
         if (!imgPath.empty()) {
-            std::error_code ec;
-            if (fs::exists(imgPath)) fs::remove(imgPath, ec);
+            (void)fs::removeFile(imgPath);
         }
 
         s_isFlushing = false;
@@ -371,8 +366,8 @@ class $modify(MyPlayLayer, PlayLayer) {
         float m_lastBestPercent = 0.f;
     };
 
-    bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
-        if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
+    bool init(GJGameLevel* level, bool dontCreateObjects) {
+        if (!PlayLayer::init(level, dontCreateObjects)) return false;
 
         auto size = CCDirector::sharedDirector()->getWinSize();
         m_fields->m_renderTexture = CCRenderTexture::create((int)size.width, (int)size.height);
@@ -846,7 +841,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 
             auto req = utils::web::WebRequest()
             .bodyMultipart(form)
-            .timeout(std::chrono::seconds(15))
+            .timeout(asp::Duration::fromSecs(15))
             .post(targetUrl);
 
             m_fields->m_task.spawn(std::move(req), [msg, targetUrl](utils::web::WebResponse res) {
@@ -980,9 +975,7 @@ class $modify(MyPlayLayer, PlayLayer) {
         director->setViewport();
 
         uint32_t randomId = m_fields->m_rng.generate<uint32_t>();
-        auto tmp = utils::string::pathToString(
-            Mod::get()->getSaveDir() / fmt::format("tmp_screenshot_{}.png", randomId)
-        );
+        auto tmp = (Mod::get()->getSaveDir() / fmt::format("tmp_screenshot_{}.png", randomId)).string();
 
         async::spawn([rawData, pixelWidth, pixelHeight, tmp, targetUrls, finalMsg]() -> arc::Future<void> {
 
@@ -1014,8 +1007,7 @@ class $modify(MyPlayLayer, PlayLayer) {
                     if (!saved) return std::nullopt;
 
                     auto readResult = utils::file::readBinary(tmp);
-                    std::error_code ec;
-                    if (fs::exists(tmp)) fs::remove(tmp, ec);
+                    if (fs::Path(tmp).exists()) (void)fs::removeFile(tmp);
 
                     if (!readResult.isOk()) return std::nullopt;
                     return readResult.unwrap();
@@ -1034,7 +1026,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 
                 auto req = utils::web::WebRequest()
                 .bodyMultipart(form)
-                .timeout(std::chrono::seconds(15))
+                .timeout(asp::Duration::fromSecs(15))
                 .post(targetUrl);
 
                 auto res = co_await std::move(req);
@@ -1050,11 +1042,8 @@ class $modify(MyPlayLayer, PlayLayer) {
                 int64_t limit = Mod::get()->getSettingValue<int64_t>("offline_queue_limit");
                 if (limit > 0 && (int64_t)s_webhookQueue.size() >= limit) co_return;
                 auto queueDir = getQueueDir();
-                std::error_code ec;
-                fs::create_directories(queueDir, ec);
-                auto savedImg = utils::string::pathToString(
-                    queueDir / fs::path(tmp).filename()
-                );
+                (void)fs::createDirAll(queueDir);
+                auto savedImg = (queueDir / fs::Path(tmp).filename().value_or("")).string();
                 (void)utils::file::writeBinary(savedImg, *optData);
                 enqueueWebhook(finalMsg, savedImg);
             }

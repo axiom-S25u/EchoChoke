@@ -1,21 +1,29 @@
 {
-    "geode": "5.5.3",
+    "geode": "6.0.0-beta.2",
     "gd": {
-        "win": "2.2081",
-        "mac": "2.2081",
-        "ios": "2.2081",
-        "android": "2.2081"
+        "win": "2.2091",
+        "mac": "2.2091",
+        "ios": "2.2091",
+        "android": "2.2091"
     },
     "id": "axiom.echochoke",
     "name": "EchoChoke (Webhook, Discord)",
-    "version": "v1.4.1",
-    "developers": ["Axiom", "slideglide", "MalikHw47"],
+    "version": "v1.5.0",
+    "developers": [
+        "Axiom",
+        "slideglide",
+        "MalikHw47"
+    ],
     "links": {
         "source": "https://github.com/axiom-S25u/EchoChoke",
         "community": "https://discord.gg/ckwYqVyXKm"
     },
     "description": "automatically roasts your fails and sends a screenshot to discord",
-    "tags": ["joke", "utility", "enhancement"],
+    "tags": [
+        "joke",
+        "utility",
+        "enhancement"
+    ],
     "settings": {
         "mod_enabled": {
             "name": "Enable Mod",
